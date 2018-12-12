@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.28315.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Opus", "Gate.Opus\Gate.Opus.csproj", "{2E5FD117-BA0F-448A-98EC-AF371D9B00EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Opus.Demo", "Gate.Opus.Demo\Gate.Opus.Demo.csproj", "{13A385E1-FA02-4005-902A-BDC9BF64D89C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{2E5FD117-BA0F-448A-98EC-AF371D9B00EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2E5FD117-BA0F-448A-98EC-AF371D9B00EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2E5FD117-BA0F-448A-98EC-AF371D9B00EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13A385E1-FA02-4005-902A-BDC9BF64D89C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13A385E1-FA02-4005-902A-BDC9BF64D89C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13A385E1-FA02-4005-902A-BDC9BF64D89C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13A385E1-FA02-4005-902A-BDC9BF64D89C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
