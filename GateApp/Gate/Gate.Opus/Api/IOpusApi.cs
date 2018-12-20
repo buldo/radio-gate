@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("DLSupportDynamicAssembly")]
 namespace Gate.Opus.Api
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace Gate.Opus.Api
     /// -Good loss robustness and packet loss concealment(PLC)
     /// -Floating point and fixed-point implementation
     /// </summary>
-    public interface IOpusApi
+    internal interface IOpusApi
     {
         #region Encoder
 
@@ -143,7 +145,7 @@ namespace Gate.Opus.Api
         /// selected is too low. This also means that it is safe to always use 48 kHz stereo input
         /// and let the encoder optimize the encoding.
         /// </remarks>
-        IntPtr opus_encoder_create(int fs, int channels, int application, out int error);
+        IntPtr opus_encoder_create(int fs, int channels, Application application, out int error);
 
         /// <summary>
         /// Initializes a previously allocated encoder state
@@ -159,7 +161,7 @@ namespace Gate.Opus.Api
         /// <param name="channels">Number of channels (1 or 2) in input signal</param>
         /// <param name="application">Coding mode (OPUS_APPLICATION_VOIP/OPUS_APPLICATION_AUDIO/OPUS_APPLICATION_RESTRICTED_LOWDELAY)</param>
         /// <returns>#OPUS_OK Success or opus_errorcodes</returns>
-        int opus_encoder_init(IntPtr st, int fs, int channels, int application);
+        int opus_encoder_init(IntPtr st, int fs, int channels, Application application);
 
         /// <summary>
         /// Encodes an Opus frame.
@@ -184,7 +186,7 @@ namespace Gate.Opus.Api
         /// <returns>
         /// The length of the encoded packet (in bytes) on success or a negative error code (see @ref opus_errorcodes) on failure.
         /// </returns>
-        int opus_encode(IntPtr st, short pcm, int frameSize, byte[] data, int maxDataBytes);
+        int opus_encode(IntPtr st, short[] pcm, int frameSize, byte[] data, int maxDataBytes);
 
         /// <summary>
         /// Encodes an Opus frame from floating point input.
@@ -225,18 +227,20 @@ namespace Gate.Opus.Api
         /// <param name="st">State to be freed.</param>
         void opus_encoder_destroy(IntPtr st);
 
-        //      /** Perform a CTL function on an Opus encoder.
-        //*
-        //* Generally the request and subsequent arguments are generated
-        //* by a convenience macro.
-        //* @param st <tt>OpusEncoder*</tt>: Encoder state.
-        //* @param request This and all remaining parameters should be replaced by one
-        //*                of the convenience macros in @ref opus_genericctls or
-        //*                @ref opus_encoderctls.
-        //* @see opus_genericctls
-        //* @see opus_encoderctls
-        //*/
-        //      int opus_encoder_ctl(OpusEncoder* st, int request, ...);
+        /// <summary>
+        /// Perform a CTL function on an Opus encoder.
+        /// </summary>
+        /// <param name="st">Encoder state.</param>
+        /// <param name="request"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// From original documentation
+        /// This and all remaining parameters should be replaced by one
+        /// of the convenience macros in opus_genericctls or opus_encoderctls.
+        /// </remarks>
+        Error opus_encoder_ctl(IntPtr st, Ctl request, out int param);
+        Error opus_encoder_ctl(IntPtr st, Ctl request, int param);
 
         #endregion // Encoder
 
@@ -324,7 +328,7 @@ namespace Gate.Opus.Api
         /// rate. Likewise, the decoder is capable of filling in either mono or
         /// interleaved stereo pcm buffers, at the caller's request.
         /// </remarks>
-        IntPtr opus_decoder_create(int fs, int channels, out int error);
+        IntPtr opus_decoder_create(int fs, int channels, out Error error);
 
         /// <summary>
         /// Initializes a previously allocated decoder state.
@@ -339,7 +343,7 @@ namespace Gate.Opus.Api
         /// </param>
         /// <param name="channels">Number of channels (1 or 2) to decode</param>
         /// <returns>#OPUS_OK Success or opus_errorcodes</returns>
-        int opus_decoder_init(IntPtr st, int fs, int channels);
+        Error opus_decoder_init(IntPtr st, int fs, int channels);
 
         /// <summary>
         /// Decode an Opus packet with floating point output.
@@ -364,7 +368,7 @@ namespace Gate.Opus.Api
         /// If no such data is available, the frame is decoded as if it were lost.
         /// </param>
         /// <returns>Number of decoded samples or opus_errorcodes</returns>
-        int opus_decode(IntPtr st, byte[] data, int len, short pcm, int frameSize, int decodeFec);
+        int opus_decode(IntPtr st, byte[] data, int len, short[] pcm, int frameSize, int decodeFec);
 
         /// <summary>
         /// Decode an Opus packet.
@@ -391,19 +395,20 @@ namespace Gate.Opus.Api
         /// <returns>Number of decoded samples or opus_errorcodes</returns>
         int opus_decode_float(IntPtr st, byte[] data, int len, float[] pcm, int frameSize, int decodeFec);
 
-
-        //      /** Perform a CTL function on an Opus decoder.
-        //*
-        //* Generally the request and subsequent arguments are generated
-        //* by a convenience macro.
-        //* @param st <tt>OpusDecoder*</tt>: Decoder state.
-        //* @param request This and all remaining parameters should be replaced by one
-        //*                of the convenience macros in @ref opus_genericctls or
-        //*                @ref opus_decoderctls.
-        //* @see opus_genericctls
-        //* @see opus_decoderctls
-        //*/
-        //      OPUS_EXPORT int opus_decoder_ctl(OpusDecoder* st, int request, ...) OPUS_ARG_NONNULL(1);
+        /// <summary>
+        /// Perform a CTL function on an Opus decoder.
+        /// </summary>
+        /// <param name="st">Decoder state.</param>
+        /// <param name="request"></param>
+        /// <param name="param"></param>
+        /// <returns></returns>
+        /// /// <remarks>
+        /// From original documentation
+        /// This and all remaining parameters should be replaced by one
+        /// of the convenience macros in opus_genericctls or opus_decoderctls.
+        /// </remarks>
+        Error opus_decoder_ctl(IntPtr st, Ctl request, out int param);
+        Error opus_decoder_ctl(IntPtr st, Ctl request, int param);
         
         /// <summary>
         /// Frees an OpusDecoder allocated by opus_decoder_create().
