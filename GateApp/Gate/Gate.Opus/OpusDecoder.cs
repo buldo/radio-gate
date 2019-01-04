@@ -72,32 +72,27 @@ namespace Gate.Opus
         /// <summary>
         /// Produces PCM samples from Opus encoded data.
         /// </summary>
-        /// <param name="inputOpusData">Opus encoded data to decode, null for dropped packet.</param>
-        /// <param name="dataLength">Length of data to decode.</param>
-        /// <param name="decodedLength">Set to the length of the decoded sample data.</param>
+        /// <param name="data">Opus encoded data to decode, null for dropped packet.</param>
         /// <returns>PCM audio samples.</returns>
-        public unsafe short[] Decode(byte[] inputOpusData, int dataLength, out int decodedLength)
+        public ReadOnlySpan<short> Decode(ReadOnlySpan<byte> data, int frameSize)
         {
             CheckDisposed();
 
-            IntPtr decodedPtr;
             var decoded = new short[MaxDataBytes];
-            int frameCount = FrameCount(MaxDataBytes);
             int length = 0;
-            fixed (short* bdec = decoded)
+            if (data != null)
             {
-                decodedPtr = new IntPtr((void*)bdec);
-
-                if (inputOpusData != null)
-                    length = _api.opus_decode(_decoderState, inputOpusData, dataLength, decoded, frameCount, 0);
-                else
-                    length = _api.opus_decode(_decoderState, null, 0, decoded, frameCount, (ForwardErrorCorrection) ? 1 : 0);
+                length = _api.opus_decode(_decoderState, data.ToArray(), data.Length, decoded, frameSize, 0);
             }
-            decodedLength = length * 2;
+            else
+            {
+                length = _api.opus_decode(_decoderState, null, 0, decoded, frameSize, (ForwardErrorCorrection) ? 1 : 0);
+            }
+          
             if (length < 0)
                 throw new Exception("Decoding failed - " + ((Error)length).ToString());
 
-            return decoded;
+            return decoded.AsSpan(0, length);
         }
 
         public void Dispose()
@@ -133,19 +128,6 @@ namespace Gate.Opus
                 _api.opus_decoder_destroy(_decoderState);
                 _decoderState = IntPtr.Zero;
             }
-        }
-
-        /// <summary>
-        /// Determines the number of frames that can fit into a buffer of the given size.
-        /// </summary>
-        /// <param name="bufferSize"></param>
-        /// <returns></returns>
-        private int FrameCount(int bufferSize)
-        {
-            //  seems like bitrate should be required
-            int bitrate = 16;
-            int bytesPerSample = (bitrate / 8) * Channels;
-            return bufferSize / (bytesPerSample * 2);
         }
     }
 }

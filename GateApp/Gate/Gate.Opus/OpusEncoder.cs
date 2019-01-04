@@ -68,41 +68,21 @@ namespace Gate.Opus
         /// Produces Opus encoded audio from PCM samples.
         /// </summary>
         /// <param name="inputPcmSamples">PCM samples to encode.</param>
-        /// <param name="sampleLength">How many bytes to encode.</param>
-        /// <param name="encodedLength">Set to length of encoded audio.</param>
+        /// <param name="frameSize">How many bytes to encode.</param>
         /// <returns>Opus encoded audio buffer.</returns>
-        public unsafe byte[] Encode(short[] inputPcmSamples, int sampleLength, out int encodedLength)
+        public ReadOnlySpan<byte> Encode(Span<short> inputPcmSamples, int frameSize)
         {
             CheckDisposed();
 
-            int frames = FrameCount(inputPcmSamples);
-            IntPtr encodedPtr;
-            byte[] encoded = new byte[MaxDataBytes];
-            int length = 0;
-            fixed (byte* benc = encoded)
-            {
-                encodedPtr = new IntPtr((void*)benc);
-                length = _api.opus_encode(_encoderState, inputPcmSamples, frames, encoded, sampleLength);
-            }
-            encodedLength = length;
+            var encoded = new byte[MaxDataBytes];
+            var length = _api.opus_encode(_encoderState, inputPcmSamples.ToArray(), frameSize, encoded, frameSize);
+            
             if (length < 0)
                 throw new Exception("Encoding failed - " + ((Error)length).ToString());
 
-            return encoded;
+            return encoded.AsSpan(0, length);
         }
-
-        /// <summary>
-        /// Helper method to determine how many bytes are required for encoding to work.
-        /// </summary>
-        /// <param name="frameCount">Target frame size.</param>
-        /// <returns></returns>
-        public int GetFrameByteCount(int frameCount)
-        {
-            int bitrate = 16;
-            int bytesPerSample = (bitrate / 8) * Channels;
-            return frameCount * bytesPerSample;
-        }
-
+        
         public void Dispose()
         {
             if (_disposed)
@@ -136,19 +116,6 @@ namespace Gate.Opus
                 _api.opus_encoder_destroy(_encoderState);
                 _encoderState = IntPtr.Zero;
             }
-        }
-
-        /// <summary>
-        /// Determines the number of frames in the PCM samples.
-        /// </summary>
-        /// <param name="pcmSamples"></param>
-        /// <returns></returns>
-        private int FrameCount(short[] pcmSamples)
-        {
-            //  seems like bitrate should be required
-            int bitrate = 16;
-            int bytesPerSample = (bitrate / 8) * Channels;
-            return pcmSamples.Length / (bytesPerSample * 2);
         }
     }
 }
