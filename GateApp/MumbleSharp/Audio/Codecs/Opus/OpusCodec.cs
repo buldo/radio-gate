@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Gate.Opus;
 
 namespace MumbleSharp.Audio.Codecs.Opus
 {
