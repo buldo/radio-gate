@@ -415,7 +415,27 @@ namespace Gate.Opus.Api
         /// </summary>
         /// <param name="st">State to be freed.</param>
         void opus_decoder_destroy(IntPtr st);
-        
+
         #endregion // Decoder
+
+        #region Packet
+
+        /// <summary>
+        /// Gets the number of samples of an Opus packet.
+        /// </summary>
+        /// <param name="packet">Opus packet</param>
+        /// <param name="len">Length of packet</param>
+        /// <param name="fs">
+        /// Sampling rate in Hz.
+        /// This must be a multiple of 400, or inaccurate results will be returned.
+        /// </param>
+        /// <returns>
+        /// Number of samples
+        /// OPUS_BAD_ARG Insufficient data was passed to the function
+        /// OPUS_INVALID_PACKET The compressed data passed is corrupted or of an unsupported type
+        /// </returns>
+        int opus_packet_get_nb_samples(byte[] packet, int len, int fs);
+        
+        #endregion // Packet
     }
 }

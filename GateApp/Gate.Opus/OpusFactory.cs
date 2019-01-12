@@ -8,9 +8,10 @@ namespace Gate.Opus
 {
     public static class OpusFactory
     {
-        private static IOpusApi _api;
         private static readonly object CreateLock = new object();
-
+        private static IOpusApi _api;
+        private static OpusPacketApi _packetApi;
+        
         /// <summary>
         /// Allocates and initializes an encoder state.
         /// </summary>
@@ -80,6 +81,16 @@ namespace Gate.Opus
 
             var api = GetApi();
             return new OpusDecoder(api, samplingRate, channels);
+        }
+
+        public static OpusPacketApi GetPacketApi()
+        {
+            if (_packetApi == null)
+            {
+                _packetApi = new OpusPacketApi(GetApi());
+            }
+
+            return _packetApi;
         }
 
         private static IOpusApi GetApi()

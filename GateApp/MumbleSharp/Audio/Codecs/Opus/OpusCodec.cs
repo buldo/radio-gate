@@ -12,6 +12,7 @@ namespace MumbleSharp.Audio.Codecs.Opus
         private readonly int[] _permittedFrameSizes;
         private readonly OpusDecoder _decoder;
         private readonly OpusEncoder _encoder;
+        private readonly OpusPacketApi _packetApi;
         
         public OpusCodec()
         {
@@ -19,6 +20,7 @@ namespace MumbleSharp.Audio.Codecs.Opus
             _decoder.IsForwardErrorCorrectionEnabled = true;
             _encoder = OpusFactory.CreateEncoder(Constants.SAMPLE_RATE, Constants.CHANNELS, Application.VoIP);
             _encoder.IsForwardErrorCorrectionEnabled = true;
+            _packetApi = OpusFactory.GetPacketApi();
 
             float[] frameSizes = { 2.5f, 5, 10, 20, 40, 60 };
 
@@ -36,6 +38,10 @@ namespace MumbleSharp.Audio.Codecs.Opus
                 _decoder.Decode(null, 0);
                 return null;
             }
+
+            int samples = _packetApi.GetNbSamples(encodedData, encodedData.Length, Constants.SAMPLE_RATE);
+            if (samples < 1)
+                return null;
 
             var decodedShort = _decoder.Decode(encodedData, encodedData.Length);
             return MemoryMarshal.Cast<short, byte>(decodedShort).ToArray();
