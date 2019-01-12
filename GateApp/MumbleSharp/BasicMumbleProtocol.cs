@@ -353,13 +353,13 @@ namespace MumbleSharp
         /// Received a voice packet from the server
         /// </summary>
         /// <param name="data"></param>
-        /// <param name="userId"></param>
+        /// <param name="sessionId"></param>
         /// <param name="sequence"></param>
         /// <param name="codec"></param>
         /// <param name="target"></param>
-        public virtual void EncodedVoice(byte[] data, uint userId, long sequence, IVoiceCodec codec, SpeechTarget target)
+        public virtual void EncodedVoice(byte[] data, uint sessionId, long sequence, IVoiceCodec codec, SpeechTarget target)
         {
-            if (!UserDictionary.TryGetValue(userId, out var user))
+            if (!UserDictionary.TryGetValue(sessionId, out var user))
                 return;
 
             user.ReceiveEncodedVoice(data, sequence, codec);

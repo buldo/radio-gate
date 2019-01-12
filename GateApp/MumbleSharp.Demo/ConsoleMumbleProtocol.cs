@@ -19,14 +19,14 @@ namespace MumbleSharp.Demo
     {
         readonly Dictionary<User, AudioPlayer> _players = new Dictionary<User, AudioPlayer>(); 
 
-        public override void EncodedVoice(byte[] data, uint userId, long sequence, IVoiceCodec codec, SpeechTarget target)
+        public override void EncodedVoice(byte[] data, uint sessionId, long sequence, IVoiceCodec codec, SpeechTarget target)
         {
-            if (UserDictionary.TryGetValue(userId, out var user))
+            if (UserDictionary.TryGetValue(sessionId, out var user))
             {
                 Console.WriteLine(user.Name + " is speaking. Seq" + sequence);
             }
             
-            base.EncodedVoice(data, userId, sequence, codec, target);
+            base.EncodedVoice(data, sessionId, sequence, codec, target);
         }
 
         protected override void UserJoined(User user)

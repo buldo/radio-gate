@@ -65,7 +65,7 @@ namespace MumbleSharp
 
         void ServerConfig(ServerConfig serverConfig);
 
-        void EncodedVoice(byte[] packet, uint userSession, long sequence, IVoiceCodec codec, SpeechTarget target);
+        void EncodedVoice(byte[] packet, uint sessionId, long sequence, IVoiceCodec codec, SpeechTarget target);
 
         void UdpPing(byte[] packet);
 

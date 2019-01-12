@@ -22,16 +22,14 @@ namespace MumbleSharp.Model
         private Channel _channel;
         public Channel Channel
         {
-            get { return _channel; }
+            get => _channel;
             set
             {
-                if (_channel != null)
-                    _channel.RemoveUser(this);
+                _channel?.RemoveUser(this);
 
                 _channel = value;
 
-                if (value != null)
-                    value.AddUser(this);
+                value?.AddUser(this);
             }
         }
 
@@ -80,11 +78,9 @@ namespace MumbleSharp.Model
             if (_channel == channel)
                 return;
 
-            UserState userstate = new UserState();
-            userstate.Actor = Id;
-            userstate.ChannelId = channel.Id;
+            var userState = new UserState {Actor = Id, ChannelId = channel.Id};
 
-            _owner.Connection.SendControl<UserState>(PacketType.UserState, userstate);
+            _owner.Connection.SendControl<UserState>(PacketType.UserState, userState);
         }
 
         protected internal IVoiceCodec GetCodec(SpeechCodecs codec)
