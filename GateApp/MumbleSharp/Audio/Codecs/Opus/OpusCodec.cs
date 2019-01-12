@@ -35,7 +35,7 @@ namespace MumbleSharp.Audio.Codecs.Opus
         {
             if (encodedData == null)
             {
-                _decoder.Decode(null, 0);
+                _decoder.Decode(null, Constants.FRAME_SIZE);
                 return null;
             }
 
@@ -43,7 +43,7 @@ namespace MumbleSharp.Audio.Codecs.Opus
             if (samples < 1)
                 return null;
 
-            var decodedShort = _decoder.Decode(encodedData, encodedData.Length);
+            var decodedShort = _decoder.Decode(encodedData, samples);
             return MemoryMarshal.Cast<short, byte>(decodedShort).ToArray();
         }
 

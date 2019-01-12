@@ -353,7 +353,7 @@ namespace Gate.Opus.Api
         /// <param name="len">Number of bytes in payload*</param>
         /// <param name="pcm">
         /// Output signal (interleaved if 2 channels).
-        /// Length is frame_size*channels*sizeof(float)
+        /// Length is frame_size*channels*sizeof(opus_int16)
         /// </param>
         /// <param name="frameSize">
         /// Number of samples per channel of available space in \a pcm.
@@ -378,7 +378,7 @@ namespace Gate.Opus.Api
         /// <param name="len">Number of bytes in payload*</param>
         /// <param name="pcm">
         /// Output signal (interleaved if 2 channels).
-        /// Length is frame_size*channels*sizeof(opus_int16)
+        /// Length is frame_size*channels*sizeof(float)
         /// </param>
         /// <param name="frameSize">
         /// Number of samples per channel of available space in \a pcm.
