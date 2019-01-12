@@ -49,8 +49,7 @@ namespace Gate.Opus
             get
             {
                 CheckDisposed();
-                int bitrate;
-                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.GET_BITRATE_REQUEST, out bitrate);
+                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.GET_BITRATE_REQUEST, out var bitrate);
                 if (ret < 0)
                     throw new Exception("Encoder error - " + (ret).ToString());
                 return bitrate;
@@ -59,6 +58,25 @@ namespace Gate.Opus
             {
                 CheckDisposed();
                 var ret = _api.opus_encoder_ctl(_encoderState, Ctl.SET_BITRATE_REQUEST, value);
+                if (ret != Error.OK)
+                    throw new Exception("Encoder error - " + (ret).ToString());
+            }
+        }
+
+        public bool IsForwardErrorCorrectionEnabled
+        {
+            get
+            {
+                CheckDisposed();
+                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.GET_INBAND_FEC_REQUEST, out var isFecEnabled);
+                if (ret < 0)
+                    throw new Exception("Encoder error - " + (ret).ToString());
+                return isFecEnabled > 0;
+            }
+            set
+            {
+                CheckDisposed();
+                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.SET_INBAND_FEC_REQUEST, Convert.ToInt32(value));
                 if (ret != Error.OK)
                     throw new Exception("Encoder error - " + (ret).ToString());
             }

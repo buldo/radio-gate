@@ -67,7 +67,7 @@ namespace Gate.Opus
         /// <summary>
         /// Gets or sets whether forward error correction is enabled or not.
         /// </summary>
-        public bool ForwardErrorCorrection { get; set; }
+        public bool IsForwardErrorCorrectionEnabled { get; set; }
 
         /// <summary>
         /// Produces PCM samples from Opus encoded data.
@@ -86,7 +86,7 @@ namespace Gate.Opus
             }
             else
             {
-                length = _api.opus_decode(_decoderState, null, 0, decoded, frameSize, (ForwardErrorCorrection) ? 1 : 0);
+                length = _api.opus_decode(_decoderState, null, 0, decoded, frameSize, (IsForwardErrorCorrectionEnabled) ? 1 : 0);
             }
           
             if (length < 0)

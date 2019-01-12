@@ -38,12 +38,11 @@ namespace Gate.Opus.Demo
             _waveOut.Init(_playBuffer);
 
             
-            var opusFactory = new OpusFactory();
             _startTime = DateTime.Now;
             _bytesSent = 0;
-            _encoder = opusFactory.CreateEncoder(48000, 1, Application.VoIP);
+            _encoder = OpusFactory.CreateEncoder(48000, 1, Application.VoIP);
             _encoder.Bitrate = 8192;
-            _decoder = opusFactory.CreateDecoder(48000, 1);
+            _decoder = OpusFactory.CreateDecoder(48000, 1);
 
             _waveOut.Play();
             _waveIn.StartRecording();

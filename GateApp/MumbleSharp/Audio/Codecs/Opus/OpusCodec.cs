@@ -1,54 +1,53 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Gate.Opus;
+using Gate.Opus.Api;
 
 namespace MumbleSharp.Audio.Codecs.Opus
 {
     public class OpusCodec
         : IVoiceCodec
     {
-        readonly OpusDecoder _decoder = new OpusDecoder(Constants.SAMPLE_RATE, Constants.CHANNELS) { EnableForwardErrorCorrection = true };
-        readonly OpusEncoder _encoder = new OpusEncoder(Constants.SAMPLE_RATE, Constants.CHANNELS) { EnableForwardErrorCorrection = true };
+        private readonly int[] _permittedFrameSizes;
+        private readonly OpusDecoder _decoder;
+        private readonly OpusEncoder _encoder;
+        
+        public OpusCodec()
+        {
+            _decoder = OpusFactory.CreateDecoder(Constants.SAMPLE_RATE, Constants.CHANNELS);
+            _decoder.IsForwardErrorCorrectionEnabled = true;
+            _encoder = OpusFactory.CreateEncoder(Constants.SAMPLE_RATE, Constants.CHANNELS, Application.VoIP);
+            _encoder.IsForwardErrorCorrectionEnabled = true;
+
+            float[] frameSizes = { 2.5f, 5, 10, 20, 40, 60 };
+
+            _permittedFrameSizes = new int[frameSizes.Length];
+            for (var i = 0; i < frameSizes.Length; i++)
+            {
+                _permittedFrameSizes[i] = (int)(Constants.SAMPLE_RATE / 1000f * frameSizes[i]);
+            }
+        }
 
         public byte[] Decode(byte[] encodedData)
         {
             if (encodedData == null)
             {
-                _decoder.Decode(null, 0, 0, new byte[Constants.FRAME_SIZE], 0);
+                _decoder.Decode(null, 0);
                 return null;
             }
 
-            int samples = OpusDecoder.GetSamples(encodedData, 0, encodedData.Length, Constants.SAMPLE_RATE);
-            if (samples < 1)
-                return null;
-
-            byte[] dst = new byte[samples * sizeof(ushort)];
-            int length = _decoder.Decode(encodedData, 0, encodedData.Length, dst, 0);
-            if (dst.Length != length)
-                Array.Resize(ref dst, length);
-            return dst;
+            var decodedShort = _decoder.Decode(encodedData, encodedData.Length);
+            return MemoryMarshal.Cast<short, byte>(decodedShort).ToArray();
         }
 
-        public IEnumerable<int> PermittedEncodingFrameSizes
-        {
-            get
-            {
-                return _encoder.PermittedFrameSizes;
-            }
-        }
+        public IEnumerable<int> PermittedEncodingFrameSizes => _permittedFrameSizes;
 
         public byte[] Encode(ArraySegment<byte> pcm)
         {
-            var samples = pcm.Count / sizeof(ushort);
-            var numberOfBytes = _encoder.FrameSizeInBytes(samples);
-
-            byte[] dst = new byte[numberOfBytes];
-            int encodedBytes = _encoder.Encode(pcm.Array, pcm.Offset, dst, 0, samples);
-
-            //without it packet will have huge zero-value-tale
-            Array.Resize(ref dst, encodedBytes);
-
-            return dst;
+            var pcmInShort = MemoryMarshal.Cast<byte, short>(pcm.AsSpan());
+            var encoded = _encoder.Encode(pcmInShort, pcmInShort.Length);
+            return encoded.ToArray();
         }
     }
 }

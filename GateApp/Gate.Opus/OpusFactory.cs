@@ -6,7 +6,7 @@ using Gate.Opus.Api;
 
 namespace Gate.Opus
 {
-    public class OpusFactory
+    public static class OpusFactory
     {
         private static IOpusApi _api;
         private static readonly object CreateLock = new object();
@@ -52,7 +52,7 @@ namespace Gate.Opus
         /// selected is too low. This also means that it is safe to always use 48 kHz stereo input
         /// and let the encoder optimize the encoding.
         /// </remarks>
-        public OpusEncoder CreateEncoder(int samplingRate, int channels, Application application)
+        public static OpusEncoder CreateEncoder(int samplingRate, int channels, Application application)
         {
             if (samplingRate != 8000 &&
                 samplingRate != 12000 &&
@@ -67,7 +67,7 @@ namespace Gate.Opus
             return new OpusEncoder(api, samplingRate, channels, application);
         }
 
-        public OpusDecoder CreateDecoder(int samplingRate, int channels)
+        public static OpusDecoder CreateDecoder(int samplingRate, int channels)
         {
             if (samplingRate != 8000 &&
                 samplingRate != 12000 &&
