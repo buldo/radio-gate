@@ -12,7 +12,7 @@ namespace MumbleSharp.Model
     {
         private readonly IMumbleProtocol _owner;
 
-        public UInt32 Id { get; private set; }
+        public UInt32 Id { get; }
         public bool Deaf { get; set; }
         public bool Muted { get; set; }
         public bool SelfDeaf { get; set; }
@@ -117,13 +117,7 @@ namespace MumbleSharp.Model
         }
 
         private readonly AudioDecodingBuffer _buffer = new AudioDecodingBuffer();
-        public IWaveProvider Voice
-        {
-            get
-            {
-                return _buffer;
-            }
-        }
+        public IWaveProvider Voice => _buffer.WaveProvider;
 
         public void ReceiveEncodedVoice(byte[] data, long sequence, IVoiceCodec codec)
         {

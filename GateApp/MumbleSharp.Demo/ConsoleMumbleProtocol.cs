@@ -21,10 +21,11 @@ namespace MumbleSharp.Demo
 
         public override void EncodedVoice(byte[] data, uint userId, long sequence, IVoiceCodec codec, SpeechTarget target)
         {
-            User user = Users.FirstOrDefault(u => u.Id == userId);
-            if (user != null)
+            if (UserDictionary.TryGetValue(userId, out var user))
+            {
                 Console.WriteLine(user.Name + " is speaking. Seq" + sequence);
-
+            }
+            
             base.EncodedVoice(data, userId, sequence, codec, target);
         }
 

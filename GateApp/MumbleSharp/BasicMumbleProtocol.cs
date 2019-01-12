@@ -359,8 +359,7 @@ namespace MumbleSharp
         /// <param name="target"></param>
         public virtual void EncodedVoice(byte[] data, uint userId, long sequence, IVoiceCodec codec, SpeechTarget target)
         {
-            User user;
-            if (!UserDictionary.TryGetValue(userId, out user))
+            if (!UserDictionary.TryGetValue(userId, out var user))
                 return;
 
             user.ReceiveEncodedVoice(data, sequence, codec);
