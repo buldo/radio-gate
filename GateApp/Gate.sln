@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MumbleSharp", "MumbleSharp\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MumbleSharp.Demo", "MumbleSharp.Demo\MumbleSharp.Demo.csproj", "{1022F8A6-7427-413C-8BB1-5AFA0E1F8895}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAudio.Pulse", "NAudio.Pulse\NAudio.Pulse.csproj", "{97861794-CB99-4A9E-8629-B7A5DD917FF7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{1022F8A6-7427-413C-8BB1-5AFA0E1F8895}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1022F8A6-7427-413C-8BB1-5AFA0E1F8895}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1022F8A6-7427-413C-8BB1-5AFA0E1F8895}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97861794-CB99-4A9E-8629-B7A5DD917FF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97861794-CB99-4A9E-8629-B7A5DD917FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97861794-CB99-4A9E-8629-B7A5DD917FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97861794-CB99-4A9E-8629-B7A5DD917FF7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

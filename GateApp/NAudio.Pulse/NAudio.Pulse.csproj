@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>NAudio.Alsa</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AdvancedDLSupport" Version="2.3.2" />
+      <PackageReference Include="NAudio" Version="1.9.0-preview2" />
+    </ItemGroup>
+
+</Project>

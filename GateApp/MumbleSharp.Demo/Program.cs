@@ -15,7 +15,7 @@ namespace MumbleSharp.Demo
         {
             string addr, name, pass;
             int port;
-            FileInfo serverConfigFile = new FileInfo(Environment.CurrentDirectory + "\\server.txt");
+            FileInfo serverConfigFile = new FileInfo(Path.Combine(Environment.CurrentDirectory , "server.txt"));
             if (serverConfigFile.Exists)
             {
                 using (StreamReader reader = new StreamReader(serverConfigFile.OpenRead()))
