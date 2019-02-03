@@ -4,7 +4,7 @@ using PulseAudioNet.Api;
 
 namespace PulseAudioNet
 {
-    public class PulseAudioFactory
+    public static class PulseAudioFactory
     {
         private static readonly object CreateLock = new object();
         private static IPulseAudioSimpleApi _simpleApi;

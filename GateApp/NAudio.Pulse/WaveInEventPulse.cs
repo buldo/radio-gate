@@ -4,6 +4,8 @@ using System.Threading;
 using NAudio.CoreAudioApi;
 using NAudio.Mixer;
 using NAudio.Wave;
+using PulseAudioNet;
+using PulseAudioNet.Api;
 
 namespace NAudio.Pulse
 {
@@ -14,14 +16,18 @@ namespace NAudio.Pulse
     /// </summary>
     public class WaveInEventPulse: IWaveIn
     {
+        private const int BufferMilliseconds = 100;
+        private readonly PulseAudioConnectionParameters _connection;
+        private readonly IPulseAudioSimpleApi _api;
+        private IntPtr _connectionHandle;
+
         private readonly AutoResetEvent callbackEvent;
         private readonly SynchronizationContext syncContext;
         private IntPtr waveInHandle;
         private volatile CaptureState captureState;
-        private WaveInBufferPulse[] buffers;
 
         /// <summary>
-        /// Indicates recorded data is available 
+        /// Indicates recorded data is available
         /// </summary>
         public event EventHandler<WaveInEventArgs> DataAvailable;
 
@@ -33,74 +39,50 @@ namespace NAudio.Pulse
         /// <summary>
         /// Prepares a Wave input device for recording
         /// </summary>
-        public WaveInEventPulse()
+        public WaveInEventPulse(
+            PulseAudioConnectionParameters connection
+            )
         {
+            _connection = connection;
+            _api = PulseAudioFactory.GetApi();
             callbackEvent = new AutoResetEvent(false);
             syncContext = SynchronizationContext.Current;
-            DeviceNumber = 0;
-            WaveFormat = new WaveFormat(8000, 16, 1);
-            BufferMilliseconds = 100;
-            NumberOfBuffers = 3;
+            WaveFormat = new WaveFormat(8000, 8, 1);
             captureState = CaptureState.Stopped;
         }
-
-        /// <summary>
-        /// Returns the number of Wave In devices available in the system
-        /// </summary>
-        public static int DeviceCount => WaveInterop.waveInGetNumDevs();
-
-        /// <summary>
-        /// Retrieves the capabilities of a waveIn device
-        /// </summary>
-        /// <param name="devNumber">Device to test</param>
-        /// <returns>The WaveIn device capabilities</returns>
-        public static WaveInCapabilities GetCapabilities(int devNumber)
-        {
-            WaveInCapabilities caps = new WaveInCapabilities();
-            int structSize = Marshal.SizeOf(caps);
-            MmException.Try(WaveInterop.waveInGetDevCaps((IntPtr)devNumber, out caps, structSize), "waveInGetDevCaps");
-            return caps;
-        }
-
-        /// <summary>
-        /// Milliseconds for the buffer. Recommended value is 100ms
-        /// </summary>
-        public int BufferMilliseconds { get; set; }
-
-        /// <summary>
-        /// Number of Buffers to use (usually 2 or 3)
-        /// </summary>
-        public int NumberOfBuffers { get; set; }
 
         /// <summary>
         /// The device number to use
         /// </summary>
         public int DeviceNumber { get; set; }
 
-        private void CreateBuffers()
-        {
-            // Default to three buffers of 100ms each
-            int bufferSize = BufferMilliseconds * WaveFormat.AverageBytesPerSecond / 1000;
-            if (bufferSize % WaveFormat.BlockAlign != 0)
-            {
-                bufferSize -= bufferSize % WaveFormat.BlockAlign;
-            }
-
-            buffers = new WaveInBuffer[NumberOfBuffers];
-            for (int n = 0; n < buffers.Length; n++)
-            {
-                buffers[n] = new WaveInBuffer(waveInHandle, bufferSize);
-            }
-        }
-
         private void OpenWaveInDevice()
         {
             CloseWaveInDevice();
-            MmResult result = WaveInterop.waveInOpenWindow(out waveInHandle, (IntPtr)DeviceNumber, WaveFormat,
-                callbackEvent.SafeWaitHandle.DangerousGetHandle(), 
-                IntPtr.Zero, WaveInterop.WaveInOutOpenFlags.CallbackEvent);
-            MmException.Try(result, "waveInOpen");
-            CreateBuffers();
+
+            var sampleSpec = new SampleSpec
+            {
+                Rate = (uint)WaveFormat.SampleRate,
+                Channels = (byte)WaveFormat.Channels,
+                Format = FormatConverter.Convert(WaveFormat.Encoding)
+            };
+            ChannelMap? channelMap = null;
+            BufferAttr? bufferAttributes = null;
+            _connectionHandle = _api.pa_simple_new(
+                _connection.ServerName,
+                _connection.ApplicationName,
+                StreamDirection.Record,
+                _connection.Device,
+                _connection.StreamName,
+                ref sampleSpec,
+                ref channelMap,
+                ref bufferAttributes,
+                out var error
+                );
+            if (_connectionHandle == IntPtr.Zero)
+            {
+                throw new Exception("Not able to create recording pulseAudio connection");
+            }
         }
 
         /// <summary>
@@ -111,7 +93,6 @@ namespace NAudio.Pulse
             if (captureState != CaptureState.Stopped)
                 throw new InvalidOperationException("Already recording");
             OpenWaveInDevice();
-            MmException.Try(WaveInterop.waveInStart(waveInHandle), "waveInStart");
             captureState = CaptureState.Starting;
             ThreadPool.QueueUserWorkItem((state) => RecordThread(), null);
         }
@@ -146,6 +127,7 @@ namespace NAudio.Pulse
             }
             while (captureState == CaptureState.Capturing)
             {
+                _api.pa_simple_read(_connectionHandle)
                 if (callbackEvent.WaitOne())
                 {
                     // requeue any buffers returned to us
@@ -191,32 +173,8 @@ namespace NAudio.Pulse
             if (captureState != CaptureState.Stopped)
             {
                 captureState = CaptureState.Stopping;
-                MmException.Try(WaveInterop.waveInStop(waveInHandle), "waveInStop");
-
-                //Reset, triggering the buffers to be returned
-                MmException.Try(WaveInterop.waveInReset(waveInHandle), "waveInReset");
-
-                callbackEvent.Set(); // signal the thread to exit
             }
         }
-
-        /// <summary>
-        /// Gets the current position in bytes from the wave input device.
-        /// it calls directly into waveInGetPosition)
-        /// </summary>
-        /// <returns>Position in bytes</returns>
-        public long GetPosition()
-        {
-            MmTime mmTime = new MmTime();
-            mmTime.wType = MmTime.TIME_BYTES; // request results in bytes, TODO: perhaps make this a little more flexible and support the other types?
-            MmException.Try(WaveInterop.waveInGetPosition(waveInHandle, out mmTime, Marshal.SizeOf(mmTime)), "waveInGetPosition");
-
-            if (mmTime.wType != MmTime.TIME_BYTES)
-                throw new Exception(string.Format("waveInGetPosition: wType -> Expected {0}, Received {1}", MmTime.TIME_BYTES, mmTime.wType));
-
-            return mmTime.cb;
-        }
-
         /// <summary>
         /// WaveFormat we are recording in
         /// </summary>
@@ -230,7 +188,9 @@ namespace NAudio.Pulse
             if (disposing)
             {
                 if (captureState != CaptureState.Stopped)
+                {
                     StopRecording();
+                }
 
                 CloseWaveInDevice();
             }
@@ -238,36 +198,10 @@ namespace NAudio.Pulse
 
         private void CloseWaveInDevice()
         {
-            // Some drivers need the reset to properly release buffers
-            WaveInterop.waveInReset(waveInHandle);
-            if (buffers != null)
+            if (_connectionHandle != IntPtr.Zero)
             {
-                for (int n = 0; n < buffers.Length; n++)
-                {
-                    buffers[n].Dispose();
-                }
-                buffers = null;
+                _api.pa_simple_free(_connectionHandle);
             }
-            WaveInterop.waveInClose(waveInHandle);
-            waveInHandle = IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Microphone Level
-        /// </summary>
-        public MixerLine GetMixerLine()
-        {
-            // TODO use mixerGetID instead to see if this helps with XP
-            MixerLine mixerLine;
-            if (waveInHandle != IntPtr.Zero)
-            {
-                mixerLine = new MixerLine(waveInHandle, 0, MixerFlags.WaveInHandle);
-            }
-            else
-            {
-                mixerLine = new MixerLine((IntPtr)DeviceNumber, 0, MixerFlags.WaveIn);
-            }
-            return mixerLine;
         }
 
         /// <summary>

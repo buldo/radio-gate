@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PulseAudioNet", "PulseAudio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PulseAudioNet.Demo", "PulseAudioNet.Demo\PulseAudioNet.Demo.csproj", "{2B1132D2-9B2B-4F3E-B40C-CF4C090E674C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NAudio.Pulse.Demo", "NAudio.Pulse.Demo\NAudio.Pulse.Demo.csproj", "{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{2B1132D2-9B2B-4F3E-B40C-CF4C090E674C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B1132D2-9B2B-4F3E-B40C-CF4C090E674C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B1132D2-9B2B-4F3E-B40C-CF4C090E674C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

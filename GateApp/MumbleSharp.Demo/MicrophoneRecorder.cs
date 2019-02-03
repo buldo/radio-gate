@@ -1,5 +1,6 @@
 ﻿using System;
 using MumbleSharp;
+using NAudio.Pulse;
 using NAudio.Wave;
 
 namespace MumbleSharp.Demo
@@ -13,11 +14,18 @@ namespace MumbleSharp.Demo
         public MicrophoneRecorder(IMumbleProtocol protocol)
         {
             _protocol = protocol;
-            
-            var sourceStream = new WaveInEvent
+            IWaveIn sourceStream;
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                WaveFormat = new WaveFormat(Constants.SAMPLE_RATE, Constants.SAMPLE_BITS, Constants.CHANNELS)
-            };
+                sourceStream = new WaveInEventPulse(new PulseAudioConnectionParameters(null, "MumbleSharpDemo", null, "Record"));
+            }
+            else
+            {
+                sourceStream = new WaveInEvent();
+            }
+
+            sourceStream.WaveFormat = new WaveFormat(Constants.SAMPLE_RATE, Constants.SAMPLE_BITS, Constants.CHANNELS);
+
             sourceStream.DataAvailable += VoiceDataAvailable;
 
             sourceStream.StartRecording();

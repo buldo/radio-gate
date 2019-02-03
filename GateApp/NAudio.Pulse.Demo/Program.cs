@@ -1,18 +1,17 @@
 ﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Timers;
-using Gate.Opus.Api;
 using NAudio.Wave;
 
-namespace Gate.Opus.Demo
+
+namespace NAudio.Pulse.Demo
 {
     class Program
     {
         static WaveInEvent _waveIn;
         static WaveOutEvent _waveOut;
         static BufferedWaveProvider _playBuffer;
-        static OpusEncoder _encoder;
-        static OpusDecoder _decoder;
         const int ShortsPerSegment = 960;
         static ulong _bytesSent;
         static DateTime _startTime;
@@ -39,9 +38,9 @@ namespace Gate.Opus.Demo
 
             _startTime = DateTime.Now;
             _bytesSent = 0;
-            _encoder = OpusFactory.CreateEncoder(48000, 1, Application.VoIP);
-            _encoder.Bitrate = 8192;
-            _decoder = OpusFactory.CreateDecoder(48000, 1);
+//            _encoder = OpusFactory.CreateEncoder(48000, 1, Application.VoIP);
+//            _encoder.Bitrate = 8192;
+//            _decoder = OpusFactory.CreateDecoder(48000, 1);
 
             _waveOut.Play();
             _waveIn.StartRecording();
@@ -65,33 +64,9 @@ namespace Gate.Opus.Demo
             Console.WriteLine("{0} Bps", bytesPerSecond);
         }
 
-        static short[] _notEncodedBuffer = new short[0];
-
         static void _waveIn_DataAvailable(object sender, WaveInEventArgs e)
         {
-            var recorderBytes = e.Buffer.AsSpan(0, e.BytesRecorded);
-            var recordedShorts = MemoryMarshal.Cast<byte, short>(recorderBytes);
-            //_playBuffer.AddSamples(MemoryMarshal.Cast<short, byte>(recordedShorts).ToArray(), 0, e.BytesRecorded);
-            //return;
-
-            var soundBuffer = new short[recordedShorts.Length + _notEncodedBuffer.Length];
-            _notEncodedBuffer.CopyTo(soundBuffer,0);
-            recordedShorts.CopyTo(soundBuffer.AsSpan(_notEncodedBuffer.Length));
-
-            int segmentCount = soundBuffer.Length / ShortsPerSegment;
-
-            var willNotEncoded = soundBuffer.AsSpan(segmentCount * ShortsPerSegment);
-            _notEncodedBuffer = willNotEncoded.ToArray();
-
-            for (int i = 0; i < segmentCount; i++)
-            {
-
-                var segment = soundBuffer.AsSpan(i* ShortsPerSegment, ShortsPerSegment);
-                var buff = _encoder.Encode(segment, segment.Length);
-                _bytesSent += (ulong)buff.Length;
-                var dec = _decoder.Decode(buff, segment.Length);
-                _playBuffer.AddSamples(MemoryMarshal.Cast<short, byte>(dec).ToArray(), 0, dec.Length * 2);
-            }
+            _playBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
         }
     }
 }
