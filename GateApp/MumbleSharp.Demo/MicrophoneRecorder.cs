@@ -13,6 +13,7 @@ namespace MumbleSharp.Demo
         public MicrophoneRecorder(IMumbleProtocol protocol)
         {
             _protocol = protocol;
+            
             var sourceStream = new WaveInEvent
             {
                 WaveFormat = new WaveFormat(Constants.SAMPLE_RATE, Constants.SAMPLE_BITS, Constants.CHANNELS)
