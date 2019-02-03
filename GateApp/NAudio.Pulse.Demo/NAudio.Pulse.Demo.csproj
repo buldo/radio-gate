@@ -10,5 +10,10 @@
         <PackageReference Include="NAudio" Version="1.9.0-preview2" />
         <PackageReference Include="System.Memory" Version="4.5.1" />
     </ItemGroup>
+
+
+    <ItemGroup>
+      <ProjectReference Include="..\NAudio.Pulse\NAudio.Pulse.csproj" />
+    </ItemGroup>
     
 </Project>

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 using NAudio.CoreAudioApi;
-using NAudio.Mixer;
 using NAudio.Wave;
 using PulseAudioNet;
 using PulseAudioNet.Api;
@@ -16,15 +14,29 @@ namespace NAudio.Pulse
     /// </summary>
     public class WaveInEventPulse: IWaveIn
     {
-        private const int BufferMilliseconds = 100;
         private readonly PulseAudioConnectionParameters _connection;
         private readonly IPulseAudioSimpleApi _api;
+        private volatile CaptureState _captureState;
         private IntPtr _connectionHandle;
 
         private readonly AutoResetEvent callbackEvent;
         private readonly SynchronizationContext syncContext;
-        private IntPtr waveInHandle;
-        private volatile CaptureState captureState;
+
+        /// <summary>
+        /// Prepares a Wave input device for recording
+        /// </summary>
+        public WaveInEventPulse(
+            PulseAudioConnectionParameters connection
+        )
+        {
+            _connection = connection;
+            _api = PulseAudioFactory.GetApi();
+            callbackEvent = new AutoResetEvent(false);
+            syncContext = SynchronizationContext.Current;
+            BufferMilliseconds = 100;
+            WaveFormat = new WaveFormat(8000, 8, 1);
+            _captureState = CaptureState.Stopped;
+        }
 
         /// <summary>
         /// Indicates recorded data is available
@@ -37,24 +49,62 @@ namespace NAudio.Pulse
         public event EventHandler<StoppedEventArgs> RecordingStopped;
 
         /// <summary>
-        /// Prepares a Wave input device for recording
+        /// Milliseconds for the buffer. Recommended value is 100ms
         /// </summary>
-        public WaveInEventPulse(
-            PulseAudioConnectionParameters connection
-            )
+        public int BufferMilliseconds { get; set; }
+
+        /// <summary>
+        /// WaveFormat we are recording in
+        /// </summary>
+        public WaveFormat WaveFormat { get; set; }
+
+        /// <summary>
+        /// Start recording
+        /// </summary>
+        public void StartRecording()
         {
-            _connection = connection;
-            _api = PulseAudioFactory.GetApi();
-            callbackEvent = new AutoResetEvent(false);
-            syncContext = SynchronizationContext.Current;
-            WaveFormat = new WaveFormat(8000, 8, 1);
-            captureState = CaptureState.Stopped;
+            if (_captureState != CaptureState.Stopped)
+                throw new InvalidOperationException("Already recording");
+            OpenWaveInDevice();
+            _captureState = CaptureState.Starting;
+            ThreadPool.QueueUserWorkItem((state) => RecordThread(), null);
         }
 
         /// <summary>
-        /// The device number to use
+        /// Stop recording
         /// </summary>
-        public int DeviceNumber { get; set; }
+        public void StopRecording()
+        {
+            if (_captureState != CaptureState.Stopped)
+            {
+                _captureState = CaptureState.Stopping;
+            }
+        }
+
+        /// <summary>
+        /// Dispose method
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose pattern
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_captureState != CaptureState.Stopped)
+                {
+                    StopRecording();
+                }
+
+                CloseWaveInDevice();
+            }
+        }
 
         private void OpenWaveInDevice()
         {
@@ -85,18 +135,6 @@ namespace NAudio.Pulse
             }
         }
 
-        /// <summary>
-        /// Start recording
-        /// </summary>
-        public void StartRecording()
-        {
-            if (captureState != CaptureState.Stopped)
-                throw new InvalidOperationException("Already recording");
-            OpenWaveInDevice();
-            captureState = CaptureState.Starting;
-            ThreadPool.QueueUserWorkItem((state) => RecordThread(), null);
-        }
-
         private void RecordThread()
         {
             Exception exception = null;
@@ -110,43 +148,30 @@ namespace NAudio.Pulse
             }
             finally
             {
-                captureState = CaptureState.Stopped;
+                _captureState = CaptureState.Stopped;
                 RaiseRecordingStoppedEvent(exception);
             }
         }
 
         private void DoRecording()
         {
-            captureState = CaptureState.Capturing;
-            foreach (var buffer in buffers)
-            {
-                if (!buffer.InQueue)
-                {
-                    buffer.Reuse();
-                }
-            }
-            while (captureState == CaptureState.Capturing)
-            {
-                _api.pa_simple_read(_connectionHandle)
-                if (callbackEvent.WaitOne())
-                {
-                    // requeue any buffers returned to us
-                    foreach (var buffer in buffers)
-                    {
-                        if (buffer.Done)
-                        {
-                            if (buffer.BytesRecorded > 0)
-                            {
-                                DataAvailable?.Invoke(this, new WaveInEventArgs(buffer.Data, buffer.BytesRecorded));
-                            }
+            _captureState = CaptureState.Capturing;
 
-                            if (captureState == CaptureState.Capturing)
-                            {
-                                buffer.Reuse();
-                            }
-                        }
-                    }
+            while (_captureState == CaptureState.Capturing)
+            {
+                int bufferSize = BufferMilliseconds * WaveFormat.AverageBytesPerSecond / 1000;
+                if (bufferSize % WaveFormat.BlockAlign != 0)
+                {
+                    bufferSize -= bufferSize % WaveFormat.BlockAlign;
                 }
+
+                var buffer = new byte[bufferSize];
+                if (_api.pa_simple_read(_connectionHandle, buffer, (UIntPtr)bufferSize, out var error) < 0)
+                {
+                    throw new Exception("PulseAudio read error");
+                }
+
+                DataAvailable?.Invoke(this, new WaveInEventArgs(buffer, bufferSize));
             }
         }
 
@@ -165,36 +190,6 @@ namespace NAudio.Pulse
                 }
             }
         }
-        /// <summary>
-        /// Stop recording
-        /// </summary>
-        public void StopRecording()
-        {
-            if (captureState != CaptureState.Stopped)
-            {
-                captureState = CaptureState.Stopping;
-            }
-        }
-        /// <summary>
-        /// WaveFormat we are recording in
-        /// </summary>
-        public WaveFormat WaveFormat { get; set; }
-
-        /// <summary>
-        /// Dispose pattern
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (captureState != CaptureState.Stopped)
-                {
-                    StopRecording();
-                }
-
-                CloseWaveInDevice();
-            }
-        }
 
         private void CloseWaveInDevice()
         {
@@ -202,15 +197,6 @@ namespace NAudio.Pulse
             {
                 _api.pa_simple_free(_connectionHandle);
             }
-        }
-
-        /// <summary>
-        /// Dispose method
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

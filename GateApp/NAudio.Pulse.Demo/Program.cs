@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Timers;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
 
@@ -9,8 +10,8 @@ namespace NAudio.Pulse.Demo
 {
     class Program
     {
-        static WaveInEvent _waveIn;
-        static WaveOutEvent _waveOut;
+        static IWaveIn _waveIn;
+        static WaveOutPulse _waveOut;
         static BufferedWaveProvider _playBuffer;
         const int ShortsPerSegment = 960;
         static ulong _bytesSent;
@@ -19,28 +20,23 @@ namespace NAudio.Pulse.Demo
 
         static void Main(string[] args)
         {
-            _waveIn = new WaveInEvent
+            var paIn = new PulseAudioConnectionParameters(null, "MumbleSharpDemo", null, "Record");
+            _waveIn = new WaveInEventPulse(paIn)
             {
                 BufferMilliseconds = 50,
-                DeviceNumber = 0,
                 WaveFormat = new WaveFormat(48000, 16, 1)
             };
             _waveIn.DataAvailable += _waveIn_DataAvailable;
 
             _playBuffer = new BufferedWaveProvider(new WaveFormat(48000, 16, 1));
 
-            _waveOut = new WaveOutEvent
-            {
-                DeviceNumber = 0
-            };
+            var paOut = new PulseAudioConnectionParameters(null, "MumbleSharpDemo", null, "Playback");
+            _waveOut = new WaveOutPulse(paOut);
             _waveOut.Init(_playBuffer);
 
 
             _startTime = DateTime.Now;
             _bytesSent = 0;
-//            _encoder = OpusFactory.CreateEncoder(48000, 1, Application.VoIP);
-//            _encoder.Bitrate = 8192;
-//            _decoder = OpusFactory.CreateDecoder(48000, 1);
 
             _waveOut.Play();
             _waveIn.StartRecording();
