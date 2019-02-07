@@ -16,4 +16,9 @@
       <ProjectReference Include="..\NAudio.Pulse\NAudio.Pulse.csproj" />
     </ItemGroup>
     
+    <ItemGroup>
+        <None Update="test.wav">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 </Project>

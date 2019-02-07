@@ -25,9 +25,7 @@ namespace NAudio.Pulse
         /// <summary>
         /// Prepares a Wave input device for recording
         /// </summary>
-        public WaveInEventPulse(
-            PulseAudioConnectionParameters connection
-        )
+        public WaveInEventPulse(PulseAudioConnectionParameters connection)
         {
             _connection = connection;
             _api = PulseAudioFactory.GetApi();
@@ -110,12 +108,7 @@ namespace NAudio.Pulse
         {
             CloseWaveInDevice();
 
-            var sampleSpec = new SampleSpec
-            {
-                Rate = (uint)WaveFormat.SampleRate,
-                Channels = (byte)WaveFormat.Channels,
-                Format = FormatConverter.Convert(WaveFormat.Encoding)
-            };
+            var sampleSpec = FormatConverter.Convert(WaveFormat);
             ChannelMap? channelMap = null;
             BufferAttr? bufferAttributes = null;
             _connectionHandle = _api.pa_simple_new(

@@ -6,22 +6,51 @@ namespace NAudio.Pulse
 {
     public static class FormatConverter
     {
-        public static SampleFormat Convert(WaveFormatEncoding from)
+        public static SampleSpec Convert(WaveFormat waveFormat)
         {
-            switch (from)
+            SampleFormat format;
+            switch (waveFormat.Encoding)
             {
                 case WaveFormatEncoding.Unknown:
-                    return SampleFormat.Invalid;
+                    format = SampleFormat.Invalid;
+                    break;
                 case WaveFormatEncoding.Pcm:
-                    return SampleFormat.U8;
+                {
+                    switch (waveFormat.BitsPerSample)
+                    {
+                        case 8:
+                            format = SampleFormat.U8;
+                            break;
+                        case 16:
+                            format = SampleFormat.S16Le;
+                            break;
+                        case 24:
+                            format = SampleFormat.S24Le;
+                            break;
+                        case 32:
+                            format = SampleFormat.S32Le;
+                            break;
+                        default:
+                            throw new NotImplementedException($"Conversion not implemented for PCM {waveFormat.BitsPerSample} bits");
+                    }
+                }
+                break;
                 case WaveFormatEncoding.MuLaw:
-                    return SampleFormat.ULaw;
+                    format = SampleFormat.ULaw;
+                    break;
                 case WaveFormatEncoding.ALaw:
-                    return SampleFormat.ALaw;
-
+                    format = SampleFormat.ALaw;
+                    break;
                 default:
-                    throw new NotImplementedException($"Conversion not implemented for {from}");
+                    throw new NotImplementedException($"Conversion not implemented for {waveFormat.Encoding}");
             }
+
+            return new SampleSpec
+            {
+                Rate = (uint) waveFormat.SampleRate,
+                Channels = (byte) waveFormat.Channels,
+                Format = format
+            };
         }
     }
 }

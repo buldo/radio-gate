@@ -1,19 +1,73 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using NAudio.Wave;
+using PulseAudioNet;
+using PulseAudioNet.Api;
 
 namespace NAudio.Pulse
 {
-    public class WaveOutPulse
+    public class WaveOutPulse : IDisposable
     {
-        private readonly PulseAudioConnectionParameters _connectionParameters;
+        private readonly PulseAudioConnectionParameters _connection;
+        private readonly IPulseAudioSimpleApi _api;
         private volatile PlaybackState playbackState;
+        private IntPtr _connectionHandle;
+        private IWaveProvider _waveStream;
+        private int _bufferSize;
+        private byte[] _buffer;
 
-        public WaveOutPulse(PulseAudioConnectionParameters connectionParameters)
+        private readonly object waveOutLock;
+        private readonly SynchronizationContext syncContext;
+
+        /// <summary>
+        /// Indicates playback has stopped automatically
+        /// </summary>
+        public event EventHandler<StoppedEventArgs> PlaybackStopped;
+
+        /// <summary>
+        /// Gets or sets the desired latency in milliseconds
+        /// Should be set before a call to Init
+        /// </summary>
+        public int DesiredLatency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of buffers used
+        /// Should be set before a call to Init
+        /// </summary>
+        public int NumberOfBuffers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the device number
+        /// Should be set before a call to Init
+        /// This must be between -1 and <see>DeviceCount</see> - 1.
+        /// -1 means stick to default device even default device is changed
+        /// </summary>
+        public int DeviceNumber { get; set; } = -1;
+
+        /// <summary>
+        /// Opens a WaveOut device
+        /// </summary>
+        public WaveOutPulse(PulseAudioConnectionParameters connection)
         {
-            _connectionParameters = connectionParameters;
-        }
+            _connection = connection;
+            _api = PulseAudioFactory.GetApi();
 
+            syncContext = SynchronizationContext.Current;
+            if (syncContext != null &&
+                ((syncContext.GetType().Name == "LegacyAspNetSynchronizationContext") ||
+                (syncContext.GetType().Name == "AspNetSynchronizationContext")))
+            {
+                syncContext = null;
+            }
+
+            // set default values up
+            DesiredLatency = 300;
+            NumberOfBuffers = 2;
+
+            waveOutLock = new object();
+        }
 
         /// <summary>
         /// Initialises the WaveOut device
@@ -25,7 +79,8 @@ namespace NAudio.Pulse
             {
                 throw new InvalidOperationException("Can't re-initialize during playback");
             }
-            if (hWaveOut != IntPtr.Zero)
+
+            if (_connectionHandle != IntPtr.Zero)
             {
                 // normally we don't allow calling Init twice, but as experiment, see if we can clean up and go again
                 // try to allow reuse of this waveOut device
@@ -34,24 +89,36 @@ namespace NAudio.Pulse
                 CloseWaveOut();
             }
 
-            callbackEvent = new AutoResetEvent(false);
+            _waveStream = waveProvider;
+            _bufferSize =
+                waveProvider.WaveFormat.ConvertLatencyToByteSize(
+                    (DesiredLatency + NumberOfBuffers - 1) / NumberOfBuffers);
+            _buffer = new byte[_bufferSize];
 
-            waveStream = waveProvider;
-            int bufferSize = waveProvider.WaveFormat.ConvertLatencyToByteSize((DesiredLatency + NumberOfBuffers - 1) / NumberOfBuffers);
-
-            MmResult result;
             lock (waveOutLock)
             {
-                result = WaveInterop.waveOutOpenWindow(out hWaveOut, (IntPtr)DeviceNumber, waveStream.WaveFormat, callbackEvent.SafeWaitHandle.DangerousGetHandle(), IntPtr.Zero, WaveInterop.WaveInOutOpenFlags.CallbackEvent);
-            }
-            MmException.Try(result, "waveOutOpen");
+                var sampleSpec = FormatConverter.Convert(_waveStream.WaveFormat);
+                ChannelMap? channelMap = null;
+                BufferAttr? bufferAttr = null;
+                _connectionHandle = _api.pa_simple_new(
+                    _connection.ServerName,
+                    _connection.ApplicationName,
+                    StreamDirection.Playback,
+                    _connection.Device,
+                    _connection.StreamName,
+                    ref sampleSpec,
+                    ref channelMap,
+                    ref bufferAttr,
+                    out var error
+                );
 
-            buffers = new WaveOutBuffer[NumberOfBuffers];
-            playbackState = PlaybackState.Stopped;
-            for (var n = 0; n < NumberOfBuffers; n++)
-            {
-                buffers[n] = new WaveOutBuffer(hWaveOut, bufferSize, waveStream, waveOutLock);
+                if (_connectionHandle == IntPtr.Zero)
+                {
+                    throw new Exception("pa_simple_new error");
+                }
             }
+
+            playbackState = PlaybackState.Stopped;
         }
 
         /// <summary>
@@ -59,20 +126,15 @@ namespace NAudio.Pulse
         /// </summary>
         public void Play()
         {
-            if (buffers == null || waveStream == null)
+            if (_waveStream == null)
             {
                 throw new InvalidOperationException("Must call Init first");
             }
             if (playbackState == PlaybackState.Stopped)
             {
                 playbackState = PlaybackState.Playing;
-                callbackEvent.Set(); // give the thread a kick
+                //Task.Run(() => PlaybackThread());
                 ThreadPool.QueueUserWorkItem(state => PlaybackThread(), null);
-            }
-            else if (playbackState == PlaybackState.Paused)
-            {
-                Resume();
-                callbackEvent.Set(); // give the thread a kick
             }
         }
 
@@ -99,32 +161,122 @@ namespace NAudio.Pulse
         {
             while (playbackState != PlaybackState.Stopped)
             {
-                if (!callbackEvent.WaitOne(DesiredLatency))
-                {
-                    if (playbackState == PlaybackState.Playing)
-                    {
-                        Debug.WriteLine("WARNING: WaveOutEvent callback event timeout");
-                    }
-                }
-
-
                 // requeue any buffers returned to us
                 if (playbackState == PlaybackState.Playing)
                 {
-                    int queued = 0;
-                    foreach (var buffer in buffers)
+                    var readed = _waveStream.Read(_buffer, 0, _bufferSize);
+                    if (readed > 0)
                     {
-                        if (buffer.InQueue || buffer.OnDone())
+                        if (_api.pa_simple_write(_connectionHandle, _buffer, (UIntPtr) readed, out var error) != 0)
                         {
-                            queued++;
+                            throw new Exception("Fail to write to pulse audio");
                         }
                     }
-                    if (queued == 0)
-                    {
-                        // we got to the end
-                        playbackState = PlaybackState.Stopped;
-                        callbackEvent.Set();
-                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stop and reset the WaveOut device
+        /// </summary>
+        public void Stop()
+        {
+            if (playbackState != PlaybackState.Stopped)
+            {
+                playbackState = PlaybackState.Stopped; // set this here to avoid a problem with some drivers whereby
+            }
+        }
+
+        /// <summary>
+        /// Gets a <see cref="Wave.WaveFormat"/> instance indicating the format the hardware is using.
+        /// </summary>
+        public WaveFormat OutputWaveFormat
+        {
+            get { return _waveStream.WaveFormat; }
+        }
+
+        /// <summary>
+        /// Playback State
+        /// </summary>
+        public PlaybackState PlaybackState
+        {
+            get { return playbackState; }
+        }
+
+
+        #region Dispose Pattern
+
+        /// <summary>
+        /// Closes this WaveOut device
+        /// </summary>
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose(true);
+        }
+
+        /// <summary>
+        /// Closes the WaveOut device and disposes of buffers
+        /// </summary>
+        /// <param name="disposing">True if called from <see>Dispose</see></param>
+        protected void Dispose(bool disposing)
+        {
+            Stop();
+
+            if (disposing)
+            {
+                DisposeBuffers();
+            }
+
+            CloseWaveOut();
+        }
+
+        private void CloseWaveOut()
+        {
+            lock (waveOutLock)
+            {
+                if (_connectionHandle != IntPtr.Zero)
+                {
+                    _api.pa_simple_free(_connectionHandle);
+                    _connectionHandle = IntPtr.Zero;
+                }
+            }
+        }
+
+        private void DisposeBuffers()
+        {
+            if (_connectionHandle != IntPtr.Zero)
+            {
+                if (_api.pa_simple_flush(_connectionHandle, out var error) != 0)
+                {
+                    throw new Exception("Not able to flush");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finalizer. Only called when user forgets to call <see>Dispose</see>
+        /// </summary>
+        ~WaveOutPulse()
+        {
+            Dispose(false);
+            Debug.Assert(false, "WaveOutEvent device was not closed");
+        }
+
+        #endregion
+
+        private void RaisePlaybackStoppedEvent(Exception e)
+        {
+            var handler = PlaybackStopped;
+            if (handler != null)
+            {
+                if (syncContext == null)
+                {
+                    handler(this, new StoppedEventArgs(e));
+                }
+                else
+                {
+                    syncContext.Post(state => handler(this, new StoppedEventArgs(e)), null);
                 }
             }
         }
