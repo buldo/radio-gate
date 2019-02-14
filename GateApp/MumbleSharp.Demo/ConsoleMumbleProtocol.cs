@@ -7,6 +7,7 @@ using MumbleSharp.Audio;
 using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Model;
 using MumbleSharp.Packets;
+using NAudio.Pulse;
 using NAudio.Wave;
 
 namespace MumbleSharp.Demo
@@ -17,7 +18,7 @@ namespace MumbleSharp.Demo
     public class ConsoleMumbleProtocol
         : BasicMumbleProtocol
     {
-        readonly Dictionary<User, AudioPlayer> _players = new Dictionary<User, AudioPlayer>(); 
+        readonly Dictionary<User, AudioPlayer> _players = new Dictionary<User, AudioPlayer>();
 
         public override void EncodedVoice(byte[] data, uint sessionId, long sequence, IVoiceCodec codec, SpeechTarget target)
         {
@@ -25,7 +26,7 @@ namespace MumbleSharp.Demo
             {
                 Console.WriteLine(user.Name + " is speaking. Seq" + sequence);
             }
-            
+
             base.EncodedVoice(data, sessionId, sequence, codec, target);
         }
 
@@ -67,9 +68,22 @@ namespace MumbleSharp.Demo
 
         private class AudioPlayer
         {
-            private readonly WaveOutEvent _playbackDevice = new WaveOutEvent();
+            private readonly IWavePlayer _playbackDevice;
+
+            private AudioPlayer()
+            {
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                {
+                    _playbackDevice = new WaveOutPulse(new PulseAudioConnectionParameters(null, "MumbleSharpDemo", null, "Playback"));
+                }
+                else
+                {
+                    _playbackDevice = new WaveOutEvent();
+                }
+            }
 
             public AudioPlayer(IWaveProvider provider)
+                : this()
             {
                 _playbackDevice.Init(provider);
                 _playbackDevice.Play();

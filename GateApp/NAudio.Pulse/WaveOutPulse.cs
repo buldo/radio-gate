@@ -8,7 +8,7 @@ using PulseAudioNet.Api;
 
 namespace NAudio.Pulse
 {
-    public class WaveOutPulse : IDisposable
+    public class WaveOutPulse : IWavePlayer, IDisposable
     {
         private readonly PulseAudioConnectionParameters _connection;
         private readonly IPulseAudioSimpleApi _api;
@@ -69,6 +69,11 @@ namespace NAudio.Pulse
             waveOutLock = new object();
         }
 
+        public void Pause()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Initialises the WaveOut device
         /// </summary>
@@ -120,6 +125,8 @@ namespace NAudio.Pulse
 
             playbackState = PlaybackState.Stopped;
         }
+
+        public float Volume { get; set; }
 
         /// <summary>
         /// Start playing the audio from the WaveStream

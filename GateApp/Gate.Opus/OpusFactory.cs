@@ -11,7 +11,7 @@ namespace Gate.Opus
         private static readonly object CreateLock = new object();
         private static IOpusApi _api;
         private static OpusPacketApi _packetApi;
-        
+
         /// <summary>
         /// Allocates and initializes an encoder state.
         /// </summary>
@@ -44,7 +44,7 @@ namespace Gate.Opus
         ///    disables the speech-optimized mode in exchange for slightly reduced delay.
         ///    This mode can only be set on an newly initialized or freshly reset encoder
         ///    because it changes the codec delay.
-        /// 
+        ///
         /// This is useful when the caller knows that the speech-optimized modes will not be needed (use with caution).
         /// </remarks>
         /// <remarks>
@@ -101,7 +101,16 @@ namespace Gate.Opus
                 {
                     if (_api == null)
                     {
-                        _api = NativeLibraryBuilder.Default.ActivateInterface<IOpusApi>("opus");
+                        string libraryPath;
+                        if (Environment.OSVersion.Platform == PlatformID.Unix)
+                        {
+                            libraryPath = "libopus.so.0";
+                        }
+                        else
+                        {
+                            libraryPath = "opus";
+                        }
+                        _api = NativeLibraryBuilder.Default.ActivateInterface<IOpusApi>(libraryPath);
                     }
                 }
             }

@@ -66,7 +66,14 @@ namespace MumbleSharp.Demo
             //When localuser is set it means we're really connected
             while (!protocol.ReceivedServerSync)
             {
+                Thread.Sleep(5000);
             }
+
+//            using (var src = new CancellationTokenSource())
+//            {
+//                src.Token.WaitHandle.WaitOne();
+//            }
+
 
             Console.WriteLine("Connected as " + protocol.LocalUser.Id);
 

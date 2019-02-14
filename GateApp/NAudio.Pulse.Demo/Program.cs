@@ -87,9 +87,9 @@ namespace NAudio.Pulse.Demo
             timer.Elapsed += _timer_Tick;
 
             timer.Start();
-            while (true)
+            using (var src = new CancellationTokenSource())
             {
-
+                src.Token.WaitHandle.WaitOne();
             }
 
             void _timer_Tick(object sender, EventArgs e)
