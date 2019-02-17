@@ -15,15 +15,14 @@ namespace MumbleSharp.Audio
         private readonly Timer _transmissionTimer = new Timer(100);
         private long _lastDecodedSequence = 0;
         private IVoiceCodec _codec;
+        private BufferedWaveProvider WaveProvider { get; }
 
-        public AudioDecodingBuffer()
+        public AudioDecodingBuffer(BufferedWaveProvider waveProvider)
         {
+            WaveProvider = waveProvider;
             _transmissionTimer.Elapsed += TransmissionTimerOnElapsed;
-            WaveProvider = new BufferedWaveProvider(new WaveFormat((int)Constants.SAMPLE_RATE, (int)Constants.SAMPLE_BITS, 1));
         }
-        
-        public BufferedWaveProvider WaveProvider { get; }
-        
+
         /// <summary>
         /// Add a new packet of encoded data
         /// </summary>

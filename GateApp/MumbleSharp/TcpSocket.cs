@@ -12,6 +12,7 @@ namespace MumbleSharp
 {
     internal class TcpSocket
     {
+        private const PrefixStyle serializationStyle = PrefixStyle.Fixed32BigEndian;
         readonly TcpClient _client;
         readonly IPEndPoint _host;
 
@@ -20,36 +21,29 @@ namespace MumbleSharp
         BinaryReader _reader;
         BinaryWriter _writer;
 
-        readonly IMumbleProtocol _protocol;
         readonly MumbleConnection _connection;
 
-        public TcpSocket(IPEndPoint host, IMumbleProtocol protocol, MumbleConnection connection)
+        public TcpSocket(IPEndPoint host, MumbleConnection connection)
         {
             _host = host;
-            _protocol = protocol;
             _connection = connection;
             _client = new TcpClient();
         }
 
-        private bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain,
-            SslPolicyErrors errors)
-        {
-            return _protocol.ValidateCertificate(sender, certificate, chain, errors);
-        }
+        public event EventHandler<PacketReceivedEventArgs> PacketReceived;
 
-        private X509Certificate SelectCertificate(object sender, string targetHost,
-            X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
-        {
-            return _protocol.SelectCertificate(sender, targetHost, localCertificates, remoteCertificate,
-                acceptableIssuers);
-        }
-
-        public void Connect(string username, string password, string[] tokens, string serverName)
+        public void Connect(
+            string username,
+            string password,
+            string[] tokens,
+            string serverName,
+            RemoteCertificateValidationCallback validateCertificate,
+            LocalCertificateSelectionCallback selectCertificate)
         {
             _client.Connect(_host);
 
             _netStream = _client.GetStream();
-            _ssl = new SslStream(_netStream, false, ValidateCertificate, SelectCertificate);
+            _ssl = new SslStream(_netStream, false, validateCertificate, selectCertificate);
             _ssl.AuthenticateAsClient(serverName);
             _reader = new BinaryReader(_ssl);
             _writer = new BinaryWriter(_ssl);
@@ -105,7 +99,7 @@ namespace MumbleSharp
                 _writer.Write(IPAddress.HostToNetworkOrder((short) type));
                 _writer.Flush();
 
-                Serializer.SerializeWithLengthPrefix<T>(_ssl, packet, PrefixStyle.Fixed32BigEndian);
+                Serializer.SerializeWithLengthPrefix<T>(_ssl, packet, serializationStyle);
                 _ssl.Flush();
                 _netStream.Flush();
             }
@@ -169,92 +163,71 @@ namespace MumbleSharp
             if (!_netStream.DataAvailable)
                 return;
 
+            PacketType type;
+            object packet;
             lock (_ssl)
             {
-                PacketType type = (PacketType) IPAddress.NetworkToHostOrder(_reader.ReadInt16());
+                type = (PacketType) IPAddress.NetworkToHostOrder(_reader.ReadInt16());
                 Console.WriteLine("{0:HH:mm:ss}: {1}", DateTime.Now, type.ToString());
 
                 switch (type)
                 {
                     case PacketType.Version:
-                        _protocol.Version(
-                            Serializer.DeserializeWithLengthPrefix<MumbleProto.Version>(_ssl,
-                                PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<MumbleProto.Version>(_ssl, serializationStyle);
                         break;
                     case PacketType.CryptSetup:
-                        var cryptSetup =
-                            Serializer.DeserializeWithLengthPrefix<CryptSetup>(_ssl, PrefixStyle.Fixed32BigEndian);
-                        _connection.ProcessCryptState(cryptSetup);
-                        SendPing();
+                        packet = Serializer.DeserializeWithLengthPrefix<CryptSetup>(_ssl, serializationStyle);
                         break;
                     case PacketType.ChannelState:
-                        _protocol.ChannelState(
-                            Serializer.DeserializeWithLengthPrefix<ChannelState>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ChannelState>(_ssl, serializationStyle);
                         break;
                     case PacketType.UserState:
-                        _protocol.UserState(
-                            Serializer.DeserializeWithLengthPrefix<UserState>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<UserState>(_ssl, serializationStyle);
                         break;
                     case PacketType.CodecVersion:
-                        _protocol.CodecVersion(
-                            Serializer.DeserializeWithLengthPrefix<CodecVersion>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<CodecVersion>(_ssl, serializationStyle);
                         break;
                     case PacketType.ContextAction:
-                        _protocol.ContextAction(
-                            Serializer.DeserializeWithLengthPrefix<ContextAction>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ContextAction>(_ssl, serializationStyle);
                         break;
                     case PacketType.ContextActionModify:
-                        _protocol.ContextActionModify(
-                            Serializer.DeserializeWithLengthPrefix<ContextActionModify>(_ssl,
-                                PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ContextActionModify>(_ssl, serializationStyle);
                         break;
                     case PacketType.PermissionQuery:
-                        _protocol.PermissionQuery(
-                            Serializer.DeserializeWithLengthPrefix<PermissionQuery>(_ssl,
-                                PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<PermissionQuery>(_ssl, serializationStyle);
                         break;
                     case PacketType.ServerSync:
-                        _protocol.ServerSync(
-                            Serializer.DeserializeWithLengthPrefix<ServerSync>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ServerSync>(_ssl, serializationStyle);
                         break;
                     case PacketType.ServerConfig:
-                        _protocol.ServerConfig(
-                            Serializer.DeserializeWithLengthPrefix<ServerConfig>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ServerConfig>(_ssl, serializationStyle);
                         break;
                     case PacketType.UDPTunnel:
                         var length = IPAddress.NetworkToHostOrder(_reader.ReadInt32());
-                        _connection.ReceiveDecryptedUdp(_reader.ReadBytes(length));
+                        packet = _reader.ReadBytes(length);
                         break;
                     case PacketType.Ping:
-                        var ping = Serializer.DeserializeWithLengthPrefix<Ping>(_ssl, PrefixStyle.Fixed32BigEndian);
-                        _connection._pingProcessor.ReceivePing(ping);
-                        _protocol.Ping(ping);
+                        packet = Serializer.DeserializeWithLengthPrefix<Ping>(_ssl, serializationStyle);
                         break;
                     case PacketType.UserRemove:
-                        _protocol.UserRemove(
-                            Serializer.DeserializeWithLengthPrefix<UserRemove>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<UserRemove>(_ssl, serializationStyle);
                         break;
                     case PacketType.ChannelRemove:
-                        _protocol.ChannelRemove(
-                            Serializer.DeserializeWithLengthPrefix<ChannelRemove>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<ChannelRemove>(_ssl, serializationStyle);
                         break;
                     case PacketType.TextMessage:
-                        var message =
-                            Serializer.DeserializeWithLengthPrefix<TextMessage>(_ssl, PrefixStyle.Fixed32BigEndian);
-                        _protocol.TextMessage(message);
+                        packet = Serializer.DeserializeWithLengthPrefix<TextMessage>(_ssl, serializationStyle);
                         break;
 
                     case PacketType.Reject:
                         throw new NotImplementedException();
 
                     case PacketType.UserList:
-                        _protocol.UserList(
-                            Serializer.DeserializeWithLengthPrefix<UserList>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<UserList>(_ssl, serializationStyle);
                         break;
 
                     case PacketType.SuggestConfig:
-                        _protocol.SuggestConfig(
-                            Serializer.DeserializeWithLengthPrefix<SuggestConfig>(_ssl, PrefixStyle.Fixed32BigEndian));
+                        packet = Serializer.DeserializeWithLengthPrefix<SuggestConfig>(_ssl, serializationStyle);
                         break;
 
                     case PacketType.Authenticate:
@@ -269,6 +242,14 @@ namespace MumbleSharp
                         throw new NotImplementedException();
                 }
             }
+
+            OnPacketReceived(type, packet);
+        }
+
+        private void OnPacketReceived(PacketType packetType, object packet)
+        {
+            var eventArgs = new PacketReceivedEventArgs(packetType, packet);
+            PacketReceived?.Invoke(this, eventArgs);
         }
     }
 }

@@ -7,11 +7,11 @@ namespace MumbleSharp.Audio
     {
         private readonly Lazy<OpusCodec> _opus = new Lazy<OpusCodec>();
 
-        protected internal IVoiceCodec GetCodec(SpeechCodecs codec)
+        protected internal IVoiceCodec GetCodec(SpeechCodec codec)
         {
             switch (codec)
             {
-                case SpeechCodecs.Opus:
+                case SpeechCodec.Opus:
                     return _opus.Value;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codec), "Unsupported coded");

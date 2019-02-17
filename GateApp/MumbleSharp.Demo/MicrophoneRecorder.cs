@@ -7,11 +7,11 @@ namespace MumbleSharp.Demo
 {
     public class MicrophoneRecorder
     {
-        private readonly IMumbleProtocol _protocol;
+        private readonly BasicMumbleProtocol _protocol;
 
         private bool _recording = true;
 
-        public MicrophoneRecorder(IMumbleProtocol protocol)
+        public MicrophoneRecorder(BasicMumbleProtocol protocol)
         {
             _protocol = protocol;
             IWaveIn sourceStream;

@@ -33,7 +33,7 @@ namespace MumbleSharp.Audio
             _unencodedBuffer.Add(new TargettedSpeech(stop: true));
         }
 
-        public byte[] Encode(SpeechCodecs codec)
+        public byte[] Encode(SpeechCodec codec)
         {
             //Get the codec
             var codecInstance = _codecs.GetCodec(codec);

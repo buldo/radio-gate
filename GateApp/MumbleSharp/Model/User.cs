@@ -10,9 +10,9 @@ namespace MumbleSharp.Model
     public class User
         : IEquatable<User>
     {
-        private readonly IMumbleProtocol _owner;
+        private readonly BasicMumbleProtocol _owner;
 
-        public UInt32 Id { get; }
+        public uint Id { get; }
         public bool Deaf { get; set; }
         public bool Muted { get; set; }
         public bool SelfDeaf { get; set; }
@@ -38,52 +38,13 @@ namespace MumbleSharp.Model
 
         private readonly CodecSet _codecs = new CodecSet();
 
-        public User(IMumbleProtocol owner, uint id)
+        public User(BasicMumbleProtocol owner, uint id)
         {
             _owner = owner;
             Id = id;
         }
 
-        private static readonly string[] _split = {"\r\n", "\n"};
-
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">A text message (which will be split on newline characters)</param>
-        public void SendMessage(string message)
-        {
-            var messages = message.Split(_split, StringSplitOptions.None);
-            SendMessage(messages);
-        }
-
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">Individual lines of a text message</param>
-        public void SendMessage(string[] message)
-        {
-            _owner.Connection.SendControl<TextMessage>(PacketType.TextMessage, new TextMessage
-            {
-                Actor = _owner.LocalUser.Id,
-                Message = string.Join(Environment.NewLine, message),
-            });
-        }
-
-        /// <summary>
-        /// Move user to a channel
-        /// </summary>
-        /// <param name="channel">Channel to move to</param>
-        public void Move(Channel channel)
-        {
-            if (_channel == channel)
-                return;
-
-            var userState = new UserState {Actor = Id, ChannelId = channel.Id};
-
-            _owner.Connection.SendControl<UserState>(PacketType.UserState, userState);
-        }
-
-        protected internal IVoiceCodec GetCodec(SpeechCodecs codec)
+        protected internal IVoiceCodec GetCodec(SpeechCodec codec)
         {
             return _codecs.GetCodec(codec);
         }
@@ -110,14 +71,6 @@ namespace MumbleSharp.Model
         public bool Equals(User other)
         {
             return other.Id == Id;
-        }
-
-        private readonly AudioDecodingBuffer _buffer = new AudioDecodingBuffer();
-        public IWaveProvider Voice => _buffer.WaveProvider;
-
-        public void ReceiveEncodedVoice(byte[] data, long sequence, IVoiceCodec codec)
-        {
-            _buffer.AddEncodedPacket(sequence, data, codec);
         }
     }
 }

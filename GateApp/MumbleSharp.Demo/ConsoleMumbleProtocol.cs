@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using MumbleProto;
@@ -7,7 +8,6 @@ using MumbleSharp.Audio;
 using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Model;
 using MumbleSharp.Packets;
-using NAudio.Pulse;
 using NAudio.Wave;
 
 namespace MumbleSharp.Demo
@@ -15,12 +15,21 @@ namespace MumbleSharp.Demo
     /// <summary>
     /// A test mumble protocol. Currently just prints the name of whoever is speaking, as well as printing messages it receives
     /// </summary>
-    public class ConsoleMumbleProtocol
-        : BasicMumbleProtocol
+    public class ConsoleMumbleProtocol : BasicMumbleProtocol
     {
-        readonly Dictionary<User, AudioPlayer> _players = new Dictionary<User, AudioPlayer>();
+        private readonly ConcurrentDictionary<uint, UserAudioPlayer> _audioBuffers = new ConcurrentDictionary<uint, UserAudioPlayer>();
 
-        public override void EncodedVoice(byte[] data, uint sessionId, long sequence, IVoiceCodec codec, SpeechTarget target)
+
+        public ConsoleMumbleProtocol(MumbleConnection connection) : base(connection)
+        {
+        }
+
+        protected override void EncodedVoice(
+            byte[] data,
+            uint sessionId,
+            long sequence,
+            SpeechCodec codec,
+            SpeechTarget target)
         {
             if (UserDictionary.TryGetValue(sessionId, out var user))
             {
@@ -28,20 +37,25 @@ namespace MumbleSharp.Demo
             }
 
             base.EncodedVoice(data, sessionId, sequence, codec, target);
+
+            if (_audioBuffers.TryGetValue(sessionId, out var audioPlayer))
+            {
+                audioPlayer.ProcessEncodedVoice(data, sequence);
+            }
         }
 
         protected override void UserJoined(User user)
         {
             base.UserJoined(user);
 
-            _players.Add(user, new AudioPlayer(user.Voice));
+            _audioBuffers.AddOrUpdate(user.Id, new UserAudioPlayer(user.Id), (u, player) => player);
         }
 
         protected override void UserLeft(User user)
         {
             base.UserLeft(user);
 
-            _players.Remove(user);
+            _audioBuffers.Remove(user.Id, out _);
         }
 
         public override void ServerConfig(ServerConfig serverConfig)
@@ -64,32 +78,6 @@ namespace MumbleSharp.Demo
             Console.WriteLine(string.Format("{0} (personal message): {1}", message.Sender.Name, message.Text));
 
             base.PersonalMessageReceived(message);
-        }
-
-        private class AudioPlayer
-        {
-            private readonly IWavePlayer _playbackDevice;
-
-            private AudioPlayer()
-            {
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    _playbackDevice = new WaveOutPulse(new PulseAudioConnectionParameters(null, "MumbleSharpDemo", null, "Playback"));
-                }
-                else
-                {
-                    _playbackDevice = new WaveOutEvent();
-                }
-            }
-
-            public AudioPlayer(IWaveProvider provider)
-                : this()
-            {
-                _playbackDevice.Init(provider);
-                _playbackDevice.Play();
-
-                _playbackDevice.PlaybackStopped += (sender, args) => Console.WriteLine("Playback stopped: " + args.Exception);
-            }
         }
     }
 }

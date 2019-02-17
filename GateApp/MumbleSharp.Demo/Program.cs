@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using MumbleSharp.Model;
 
@@ -54,9 +56,9 @@ namespace MumbleSharp.Demo
                 }
             }
 
-            ConsoleMumbleProtocol protocol = new ConsoleMumbleProtocol();
-            MumbleConnection connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port), protocol);
-            connection.Connect(name, pass, new string[0], addr);
+            var connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port));
+            ConsoleMumbleProtocol protocol = new ConsoleMumbleProtocol(connection);
+            connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
 
             Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
             t.Start();
@@ -80,6 +82,16 @@ namespace MumbleSharp.Demo
             DrawChannel("", protocol.Channels.ToArray(), protocol.Users.ToArray(), protocol.RootChannel);
 
             Console.ReadLine();
+        }
+
+        private static X509Certificate SelectCertificate(object sender, string targethost, X509CertificateCollection localcertificates, X509Certificate remotecertificate, string[] acceptableissuers)
+        {
+            return null;
+        }
+
+        private static bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslpolicyerrors)
+        {
+            return true;
         }
 
         private static void DrawChannel(string indent, IEnumerable<Channel> channels, IEnumerable<User> users, Channel c)
