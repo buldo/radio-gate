@@ -421,9 +421,7 @@ namespace MumbleSharp
                 lock (_ssl)
                     Send<Ping>(PacketType.Ping, ping);
             }
-
             
-
             public void Process()
             {
                 if (!_client.Connected)
