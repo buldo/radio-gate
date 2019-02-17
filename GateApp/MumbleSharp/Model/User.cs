@@ -7,8 +7,7 @@ using NAudio.Wave;
 
 namespace MumbleSharp.Model
 {
-    public class User
-        : IEquatable<User>
+    public class User : IEquatable<User>
     {
         private readonly BasicMumbleProtocol _owner;
 
@@ -20,6 +19,7 @@ namespace MumbleSharp.Model
         public bool Suppress { get; set; }
 
         private Channel _channel;
+
         public Channel Channel
         {
             get => _channel;
@@ -54,23 +54,24 @@ namespace MumbleSharp.Model
             return Name;
         }
 
-        public override int GetHashCode()
+        public bool Equals(User other)
         {
-            return Id.GetHashCode();
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return Id == other.Id;
         }
 
         public override bool Equals(object obj)
         {
-            var u = obj as User;
-            if (u != null)
-                return (Equals(u));
-
-            return ReferenceEquals(this, obj);
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((User) obj);
         }
 
-        public bool Equals(User other)
+        public override int GetHashCode()
         {
-            return other.Id == Id;
+            return (int) Id;
         }
     }
 }
