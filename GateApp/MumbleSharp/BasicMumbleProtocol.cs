@@ -3,7 +3,6 @@ using MumbleProto;
 using MumbleSharp.Audio;
 using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Model;
-using MumbleSharp.Packets;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -60,7 +59,7 @@ namespace MumbleSharp
 
         public BasicMumbleProtocol()
         {
-            
+
         }
 
         /// <summary>
@@ -90,7 +89,7 @@ namespace MumbleSharp
         /// <param name="version"></param>
         public virtual void Version(Version version)
         {
-            
+
         }
 
         /// <summary>
@@ -234,7 +233,7 @@ namespace MumbleSharp
 
         public virtual void PermissionQuery(PermissionQuery permissionQuery)
         {
-            
+
         }
 
         #region server setup
@@ -262,7 +261,7 @@ namespace MumbleSharp
         /// <param name="serverConfig"></param>
         public virtual void ServerConfig(ServerConfig serverConfig)
         {
-            
+
         }
         #endregion
 
@@ -377,16 +376,16 @@ namespace MumbleSharp
         }
         #endregion
 
-        
 
-        
+
+
         /// <summary>
         /// Received a ping over the TCP connection
         /// </summary>
         /// <param name="ping"></param>
         public virtual void Ping(Ping ping)
         {
-            
+
         }
 
         #region text messages
@@ -428,7 +427,7 @@ namespace MumbleSharp
 
                     ChannelMessageReceived(new ChannelMessage(user, string.Join("", textMessage.Message), channel));
                 }
-                
+
             }
         }
 

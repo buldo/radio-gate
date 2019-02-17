@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Gate.Opus;
 using Gate.Opus.Api;
 
-namespace MumbleSharp.Audio.Codecs.Opus
+namespace MumbleSharp.Audio.Codecs
 {
     public class OpusCodec
         : IVoiceCodec
@@ -13,7 +13,7 @@ namespace MumbleSharp.Audio.Codecs.Opus
         private readonly OpusDecoder _decoder;
         private readonly OpusEncoder _encoder;
         private readonly OpusPacketApi _packetApi;
-        
+
         public OpusCodec()
         {
             _decoder = OpusFactory.CreateDecoder(Constants.SAMPLE_RATE, Constants.CHANNELS);
@@ -22,12 +22,12 @@ namespace MumbleSharp.Audio.Codecs.Opus
             _encoder.IsForwardErrorCorrectionEnabled = true;
             _packetApi = OpusFactory.GetPacketApi();
 
-            float[] frameSizes = { 2.5f, 5, 10, 20, 40, 60 };
+            float[] frameSizes = {2.5f, 5, 10, 20, 40, 60};
 
             _permittedFrameSizes = new int[frameSizes.Length];
             for (var i = 0; i < frameSizes.Length; i++)
             {
-                _permittedFrameSizes[i] = (int)(Constants.SAMPLE_RATE / 1000f * frameSizes[i]);
+                _permittedFrameSizes[i] = (int) (Constants.SAMPLE_RATE / 1000f * frameSizes[i]);
             }
         }
 
