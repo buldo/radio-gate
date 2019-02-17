@@ -11,8 +11,6 @@ namespace MumbleSharp.Model
 {
     public class Channel : IEquatable<Channel>
     {
-        internal readonly BasicMumbleProtocol Owner;
-
         public bool Temporary { get; set; }
         public string Name { get; set; }
         public uint Id { get; private set; }
@@ -25,29 +23,14 @@ namespace MumbleSharp.Model
             get { return _users.Keys; }
         }
 
-        public Channel(BasicMumbleProtocol owner, uint id, string name, uint parent)
+        public Channel(uint id, string name, uint parent)
         {
-            Owner = owner;
             Id = id;
             Name = name;
             Parent = parent;
         }
 
         private static readonly string[] _split = { "\r\n", "\n" };
-
-        public void SendVoice(ArraySegment<byte> buffer, bool whisper = false)
-        {
-            Owner.SendVoice(
-                buffer,
-                target: whisper ? SpeechTarget.WhisperToChannel : SpeechTarget.Normal,
-                targetId: Id
-            );
-        }
-
-        public void SendVoiceStop()
-        {
-            Owner.SendVoiceStop();
-        }
 
         public bool Equals(Channel other)
         {

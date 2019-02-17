@@ -62,39 +62,6 @@ namespace MumbleSharp
             };
         }
 
-        public void SendMessage(IEnumerable<Channel> channels, string[] message, bool recursive)
-        {
-            // It's conceivable that this group could include channels from multiple different server connections
-            // group by server
-            foreach (var group in channels.GroupBy(a => a.Owner))
-            {
-                var owner = group.First().Owner;
-
-                var msg = new TextMessage
-                {
-                    Actor = owner.LocalUser.Id,
-                    Message = string.Join(Environment.NewLine, message),
-                };
-
-                if (recursive)
-                {
-                    if (msg.TreeIds == null)
-                        msg.TreeIds = group.Select(c => c.Id).ToArray();
-                    else
-                        msg.TreeIds = msg.TreeIds.Concat(group.Select(c => c.Id)).ToArray();
-                }
-                else
-                {
-                    if (msg.ChannelIds == null)
-                        msg.ChannelIds = group.Select(c => c.Id).ToArray();
-                    else
-                        msg.ChannelIds = msg.ChannelIds.Concat(group.Select(c => c.Id)).ToArray();
-                }
-
-                _connection.SendControl<TextMessage>(PacketType.TextMessage, msg);
-            }
-        }
-
         /// <summary>
         /// Send a text message
         /// </summary>
@@ -171,6 +138,15 @@ namespace MumbleSharp
             _connection.SendControl<UserState>(PacketType.UserState, userState);
         }
 
+        public void SendVoice(Channel channel, ArraySegment<byte> buffer, bool whisper = false)
+        {
+            SendVoice(
+                buffer,
+                target: whisper ? SpeechTarget.WhisperToChannel : SpeechTarget.Normal,
+                targetId: channel.Id
+            );
+        }
+
         public void JoinChannel(Channel channel)
         {
             var state = new UserState
@@ -222,7 +198,7 @@ namespace MumbleSharp
         public virtual void ChannelState(ChannelState channelState)
         {
             var channel = ChannelDictionary.AddOrUpdate(channelState.ChannelId,
-                i => new Channel(this, channelState.ChannelId, channelState.Name, channelState.Parent)
+                i => new Channel(channelState.ChannelId, channelState.Name, channelState.Parent)
                     {Temporary = channelState.Temporary},
                 (i, c) =>
                 {
@@ -278,7 +254,7 @@ namespace MumbleSharp
                 User user = UserDictionary.AddOrUpdate(userState.Session, i =>
                 {
                     added = true;
-                    return new User(this, userState.Session);
+                    return new User(userState.Session);
                 }, (i, u) => u);
 
                 if (userState.ShouldSerializeSelfDeaf())

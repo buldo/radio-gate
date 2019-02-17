@@ -9,8 +9,6 @@ namespace MumbleSharp.Model
 {
     public class User : IEquatable<User>
     {
-        private readonly BasicMumbleProtocol _owner;
-
         public uint Id { get; }
         public bool Deaf { get; set; }
         public bool Muted { get; set; }
@@ -38,9 +36,8 @@ namespace MumbleSharp.Model
 
         private readonly CodecSet _codecs = new CodecSet();
 
-        public User(BasicMumbleProtocol owner, uint id)
+        public User(uint id)
         {
-            _owner = owner;
             Id = id;
         }
 

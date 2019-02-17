@@ -1,5 +1,4 @@
 ﻿using System;
-using MumbleSharp;
 using NAudio.Pulse;
 using NAudio.Wave;
 
@@ -48,7 +47,7 @@ namespace MumbleSharp.Demo
 
             //Send to the channel LocalUser is currently in
             if (_protocol.LocalUser != null && _protocol.LocalUser.Channel != null)
-                _protocol.LocalUser.Channel.SendVoice(new ArraySegment<byte>(e.Buffer, 0, e.BytesRecorded));
+                _protocol.SendVoice(_protocol.LocalUser.Channel, new ArraySegment<byte>(e.Buffer, 0, e.BytesRecorded));
         }
 
         public void Record()
@@ -59,7 +58,7 @@ namespace MumbleSharp.Demo
         public void Stop()
         {
             _recording = false;
-            _protocol.LocalUser.Channel.SendVoiceStop();
+            _protocol.SendVoiceStop();
         }
     }
 }
