@@ -22,9 +22,10 @@ namespace MumbleSharp.Demo
         public ConsoleMumbleProtocol(MumbleConnection connection) : base(connection)
         {
             RegisterPacketProcessor(PacketType.ServerConfig, ServerConfig);
+            RegisterVoicePacketProcessor(EncodedVoice);
         }
 
-        protected override void EncodedVoice(
+        private void EncodedVoice(
             byte[] data,
             uint sessionId,
             long sequence,
@@ -35,8 +36,6 @@ namespace MumbleSharp.Demo
             {
                 Console.WriteLine(user.Name + " is speaking. Seq" + sequence);
             }
-
-            base.EncodedVoice(data, sessionId, sequence, codec, target);
 
             if (_audioBuffers.TryGetValue(sessionId, out var audioPlayer))
             {

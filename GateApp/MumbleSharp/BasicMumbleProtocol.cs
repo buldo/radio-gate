@@ -61,7 +61,6 @@ namespace MumbleSharp
             _connection.RegisterPacketProcessor(PacketType.UserRemove, UserRemove);
             _connection.RegisterPacketProcessor(PacketType.ChannelRemove, ChannelRemove);
             _connection.RegisterPacketProcessor(PacketType.TextMessage, TextMessage);
-            _connection.EncodedVoiceReceived += ConnectionOnEncodedVoiceReceived;
             _encodingThread = new Thread(EncodingThreadEntry)
             {
                 IsBackground = true
@@ -71,6 +70,11 @@ namespace MumbleSharp
         public void RegisterPacketProcessor(PacketType packetType, Action<object> processor)
         {
             _connection.RegisterPacketProcessor(packetType, processor);
+        }
+
+        public void RegisterVoicePacketProcessor(Action<byte[], uint, long, SpeechCodec, SpeechTarget> processor)
+        {
+            _connection.RegisterVoicePacketProcessor(processor);
         }
 
         /// <summary>
@@ -408,26 +412,6 @@ namespace MumbleSharp
             return user.GetCodec(codec);
         }
 
-        /// <summary>
-        /// Received a UDP ping from the server
-        /// </summary>
-        /// <param name="packet"></param>
-        public virtual void UdpPing(byte[] packet)
-        {
-        }
-
-        /// <summary>
-        /// Received a voice packet from the server
-        /// </summary>
-        protected virtual void EncodedVoice(
-            byte[] data,
-            uint sessionId,
-            long sequence,
-            SpeechCodec codec,
-            SpeechTarget target)
-        {
-        }
-
         public void SendVoice(ArraySegment<byte> pcm, SpeechTarget target, uint targetId)
         {
             _encodingBuffer.Add(pcm, target, targetId);
@@ -440,15 +424,6 @@ namespace MumbleSharp
         }
 
         #endregion
-
-        /// <summary>
-        /// Received a ping over the TCP connection
-        /// </summary>
-        /// <param name="ping"></param>
-        public virtual void Ping(Ping ping)
-        {
-
-        }
 
         #region text messages
 
@@ -508,10 +483,5 @@ namespace MumbleSharp
         }
 
         #endregion
-
-        private void ConnectionOnEncodedVoiceReceived(object sender, EncodedVoiceReceivedEventArgs e)
-        {
-            EncodedVoice(e.Data, e.Session, e.Sequence, e.Codec, e.Target);
-        }
     }
 }

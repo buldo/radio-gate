@@ -4,7 +4,6 @@ using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Packets;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
@@ -25,6 +24,7 @@ namespace MumbleSharp
         };
 
         private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
+        private readonly List<Action<byte[], uint, long, SpeechCodec, SpeechTarget>> _voicePacketProcessors = new List<Action<byte[], uint, long, SpeechCodec, SpeechTarget>>();
 
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
@@ -54,8 +54,6 @@ namespace MumbleSharp
 
         public IPEndPoint Host { get; }
         
-        public event EventHandler<EncodedVoiceReceivedEventArgs> EncodedVoiceReceived;
-
         /// <summary>
         /// Creates a connection to the server using the given address and port.
         /// </summary>
@@ -89,6 +87,11 @@ namespace MumbleSharp
         public void RegisterPacketProcessor(PacketType packetType, Action<object> processor)
         {
             _processors[packetType].Add(processor);
+        }
+
+        public void RegisterVoicePacketProcessor(Action<byte[], uint, long, SpeechCodec, SpeechTarget> processor)
+        {
+
         }
 
         public void Connect(
@@ -209,7 +212,10 @@ namespace MumbleSharp
 
         private void UdpOnEncodedVoiceReceived(object sender, EncodedVoiceReceivedEventArgs e)
         {
-            EncodedVoiceReceived?.Invoke(this, e);
+            foreach(var processor in _voicePacketProcessors)
+            {
+                processor(e.Data, e.Session, e.Sequence, e.Codec, e.Target);
+            }
         }
     }
 }
