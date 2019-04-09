@@ -3,6 +3,7 @@ using MumbleSharp.Audio;
 using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Packets;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,6 +23,8 @@ namespace MumbleSharp
             AutoReset = true,
             Interval = 5000
         };
+
+        private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
 
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
@@ -50,9 +53,7 @@ namespace MumbleSharp
         }
 
         public IPEndPoint Host { get; }
-
-        public event EventHandler<PacketReceivedEventArgs> PacketReceived;
-
+        
         public event EventHandler<EncodedVoiceReceivedEventArgs> EncodedVoiceReceived;
 
         /// <summary>
@@ -77,6 +78,17 @@ namespace MumbleSharp
             _pingTimer.Elapsed += PingTimerOnElapsed;
             Host = host;
             State = ConnectionStates.Disconnected;
+
+            foreach(var val in Enum.GetValues(typeof(PacketType)))
+            {
+                _processors[(PacketType)val] = new List<Action<object>>();
+            }
+        }
+        
+
+        public void RegisterPacketProcessor(PacketType packetType, Action<object> processor)
+        {
+            _processors[packetType].Add(processor);
         }
 
         public void Connect(
@@ -189,7 +201,10 @@ namespace MumbleSharp
                     break;
             }
 
-            PacketReceived?.Invoke(this, e);
+            foreach(var processor in _processors[e.PacketType])
+            {
+                processor(e.Packet);
+            }
         }
 
         private void UdpOnEncodedVoiceReceived(object sender, EncodedVoiceReceivedEventArgs e)

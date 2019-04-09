@@ -18,10 +18,10 @@ namespace MumbleSharp.Demo
     public class ConsoleMumbleProtocol : BasicMumbleProtocol
     {
         private readonly ConcurrentDictionary<uint, UserAudioPlayer> _audioBuffers = new ConcurrentDictionary<uint, UserAudioPlayer>();
-
-
+        
         public ConsoleMumbleProtocol(MumbleConnection connection) : base(connection)
         {
+            RegisterPacketProcessor(PacketType.ServerConfig, ServerConfig);
         }
 
         protected override void EncodedVoice(
@@ -58,10 +58,9 @@ namespace MumbleSharp.Demo
             _audioBuffers.Remove(user.Id, out _);
         }
 
-        public override void ServerConfig(ServerConfig serverConfig)
+        private void ServerConfig(object packet)
         {
-            base.ServerConfig(serverConfig);
-
+            var serverConfig = (ServerConfig)packet;
             Console.WriteLine(serverConfig.WelcomeText);
         }
 

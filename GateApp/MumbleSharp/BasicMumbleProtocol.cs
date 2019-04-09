@@ -54,12 +54,23 @@ namespace MumbleSharp
         public BasicMumbleProtocol(MumbleConnection connection)
         {
             _connection = connection;
-            _connection.PacketReceived += ConnectionOnPacketReceived;
+            _connection.RegisterPacketProcessor(PacketType.ChannelState, ChannelStateProcessor);
+            _connection.RegisterPacketProcessor(PacketType.UserState, UserState);
+            _connection.RegisterPacketProcessor(PacketType.CodecVersion, CodecVersion);
+            _connection.RegisterPacketProcessor(PacketType.ServerSync, ServerSync);
+            _connection.RegisterPacketProcessor(PacketType.UserRemove, UserRemove);
+            _connection.RegisterPacketProcessor(PacketType.ChannelRemove, ChannelRemove);
+            _connection.RegisterPacketProcessor(PacketType.TextMessage, TextMessage);
             _connection.EncodedVoiceReceived += ConnectionOnEncodedVoiceReceived;
             _encodingThread = new Thread(EncodingThreadEntry)
             {
                 IsBackground = true
             };
+        }
+
+        public void RegisterPacketProcessor(PacketType packetType, Action<object> processor)
+        {
+            _connection.RegisterPacketProcessor(packetType, processor);
         }
 
         /// <summary>
@@ -167,20 +178,6 @@ namespace MumbleSharp
             LocalUser = null;
         }
 
-        /// <summary>
-        /// Server has sent a version update
-        /// </summary>
-        /// <param name="version"></param>
-        public virtual void Version(Version version)
-        {
-
-        }
-
-        public virtual void SuggestConfig(SuggestConfig config)
-        {
-
-        }
-
         #region Channels
 
         protected virtual void ChannelJoined(Channel channel)
@@ -195,8 +192,9 @@ namespace MumbleSharp
         /// Server has changed some detail of a channel
         /// </summary>
         /// <param name="channelState"></param>
-        public virtual void ChannelState(ChannelState channelState)
+        private void ChannelStateProcessor(object packet)
         {
+            var channelState = (ChannelState)packet;
             var channel = ChannelDictionary.AddOrUpdate(channelState.ChannelId,
                 i => new Channel(channelState.ChannelId, channelState.Name, channelState.Parent)
                     {Temporary = channelState.Temporary},
@@ -219,8 +217,9 @@ namespace MumbleSharp
         /// Server has removed a channel
         /// </summary>
         /// <param name="channelRemove"></param>
-        public virtual void ChannelRemove(ChannelRemove channelRemove)
+        private void ChannelRemove(object packet)
         {
+            var channelRemove = (ChannelRemove)packet;
             Channel c;
             if (ChannelDictionary.TryRemove(channelRemove.ChannelId, out c))
             {
@@ -244,8 +243,9 @@ namespace MumbleSharp
         /// Server has changed some detail of a user
         /// </summary>
         /// <param name="userState"></param>
-        public virtual void UserState(UserState userState)
+        private void UserState(object packet)
         {
+            var userState = (UserState)packet;
             Extensions.Log.Info("User State", userState);
 
             if (userState.ShouldSerializeSession())
@@ -286,8 +286,10 @@ namespace MumbleSharp
         /// A user has been removed from the server (left, kicked or banned)
         /// </summary>
         /// <param name="userRemove"></param>
-        public virtual void UserRemove(UserRemove userRemove)
+        private void UserRemove(object packet)
         {
+            var userRemove = (UserRemove)packet;
+
             User user;
             if (UserDictionary.TryRemove(userRemove.Session, out user))
             {
@@ -301,28 +303,17 @@ namespace MumbleSharp
         }
 
         #endregion
-
-        public virtual void ContextAction(ContextAction contextAction)
-        {
-        }
-
-        public virtual void ContextActionModify(ContextActionModify contextActionModify)
-        {
-        }
-
-        public virtual void PermissionQuery(PermissionQuery permissionQuery)
-        {
-
-        }
-
+        
         #region server setup
 
         /// <summary>
         /// Initial connection to the server
         /// </summary>
         /// <param name="serverSync"></param>
-        public virtual void ServerSync(ServerSync serverSync)
+        private void ServerSync(object packet)
         {
+            var serverSync = (ServerSync)packet;
+
             if (LocalUser != null)
                 throw new InvalidOperationException("Second ServerSync Received");
 
@@ -334,16 +325,7 @@ namespace MumbleSharp
 
             ReceivedServerSync = true;
         }
-
-        /// <summary>
-        /// Some detail of the server configuration has changed
-        /// </summary>
-        /// <param name="serverConfig"></param>
-        public virtual void ServerConfig(ServerConfig serverConfig)
-        {
-
-        }
-
+        
         #endregion
 
         #region voice
@@ -400,8 +382,9 @@ namespace MumbleSharp
             }
         }
 
-        public virtual void CodecVersion(CodecVersion codecVersion)
+        private void CodecVersion(object packet)
         {
+            var codecVersion = (CodecVersion)packet;
             if (codecVersion.Opus)
                 TransmissionCodec = SpeechCodec.Opus;
             else if (codecVersion.PreferAlpha)
@@ -473,8 +456,10 @@ namespace MumbleSharp
         /// Received a text message from the server
         /// </summary>
         /// <param name="textMessage"></param>
-        public virtual void TextMessage(TextMessage textMessage)
+        private void TextMessage(object packet)
         {
+            var textMessage = (TextMessage)packet;
+
             User user;
             if (!UserDictionary.TryGetValue(textMessage.Actor, out user)
             ) //If we don't know the user for this packet, just ignore it
@@ -523,60 +508,6 @@ namespace MumbleSharp
         }
 
         #endregion
-
-        public virtual void UserList(UserList userList)
-        {
-        }
-
-        private void ConnectionOnPacketReceived(object sender, PacketReceivedEventArgs e)
-        {
-            switch (e.PacketType)
-            {
-                case PacketType.Version:
-                    Version((Version) e.Packet);
-                    break;
-                case PacketType.ChannelState:
-                    ChannelState((ChannelState) e.Packet);
-                    break;
-                case PacketType.UserState:
-                    UserState((UserState) e.Packet);
-                    break;
-                case PacketType.CodecVersion:
-                    CodecVersion((CodecVersion) e.Packet);
-                    break;
-                case PacketType.ContextAction:
-                    ContextAction((ContextAction) e.Packet);
-                    break;
-                case PacketType.ContextActionModify:
-                    ContextActionModify((ContextActionModify) e.Packet);
-                    break;
-                case PacketType.PermissionQuery:
-                    PermissionQuery((PermissionQuery) e.Packet);
-                    break;
-                case PacketType.ServerSync:
-                    ServerSync((ServerSync) e.Packet);
-                    break;
-                case PacketType.ServerConfig:
-                    ServerConfig((ServerConfig) e.Packet);
-                    break;
-                case PacketType.UserRemove:
-                    UserRemove((UserRemove) e.Packet);
-                    break;
-                case PacketType.ChannelRemove:
-                    ChannelRemove((ChannelRemove) e.Packet);
-                    break;
-                case PacketType.TextMessage:
-                    TextMessage((TextMessage) e.Packet);
-                    break;
-                case PacketType.UserList:
-                    UserList((UserList) e.Packet);
-                    break;
-
-                case PacketType.SuggestConfig:
-                    SuggestConfig((SuggestConfig) e.Packet);
-                    break;
-            }
-        }
 
         private void ConnectionOnEncodedVoiceReceived(object sender, EncodedVoiceReceivedEventArgs e)
         {
