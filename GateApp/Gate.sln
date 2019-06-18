@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PulseAudioNet.Demo", "Pulse
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NAudio.Pulse.Demo", "NAudio.Pulse.Demo\NAudio.Pulse.Demo.csproj", "{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MumbleSharp.Voice", "MumbleSharp.Voice\MumbleSharp.Voice.csproj", "{E5B94C7F-B08D-4270-8D72-7B507910DFE6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MumbleSharp.Voice", "MumbleSharp.Voice\MumbleSharp.Voice.csproj", "{E5B94C7F-B08D-4270-8D72-7B507910DFE6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{966A8C5D-254A-40ED-B88E-C9C49A459CAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +68,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{13A385E1-FA02-4005-902A-BDC9BF64D89C} = {966A8C5D-254A-40ED-B88E-C9C49A459CAD}
+		{1022F8A6-7427-413C-8BB1-5AFA0E1F8895} = {966A8C5D-254A-40ED-B88E-C9C49A459CAD}
+		{2B1132D2-9B2B-4F3E-B40C-CF4C090E674C} = {966A8C5D-254A-40ED-B88E-C9C49A459CAD}
+		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C} = {966A8C5D-254A-40ED-B88E-C9C49A459CAD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18B5C95C-495C-4D8A-B6BA-4649C5E59AC3}
