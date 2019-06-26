@@ -7,7 +7,7 @@ using MumbleProto;
 using MumbleSharp.Model;
 using MumbleSharp.Packets;
 
-namespace MumbleSharp.Services
+namespace MumbleSharp.Services.UsersManagement
 {
     public class UsersManagementService
     {
@@ -15,6 +15,7 @@ namespace MumbleSharp.Services
         private readonly ServerSyncStateService _serverSyncStateService;
         private readonly ConcurrentDictionary<UInt32, User> _users = new ConcurrentDictionary<UInt32, User>();
         private readonly ConcurrentDictionary<UInt32, Channel> _channels = new ConcurrentDictionary<UInt32, Channel>();
+
         public UsersManagementService(MumbleConnection connection, ServerSyncStateService serverSyncStateService)
         {
             _connection = connection;
@@ -27,7 +28,14 @@ namespace MumbleSharp.Services
             _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelRemove, ProcessChannelRemovePacket));
         }
 
+        [CanBeNull]
         public User LocalUser { get; private set; }
+
+        [PublicAPI]
+        public event EventHandler<UserEventArgs> UserJoined;
+
+        [PublicAPI]
+        public event EventHandler<UserEventArgs> UserLeft;
 
         public IEnumerable<User> GetUsers() => _users.Values;
 
@@ -107,6 +115,10 @@ namespace MumbleSharp.Services
                     }
                 }
 
+                if (added)
+                {
+                    UserJoined?.Invoke(this, new UserEventArgs(user));
+                }
             }
         }
 
@@ -121,7 +133,7 @@ namespace MumbleSharp.Services
             {
                 user.Channel = null;
 
-                //UserLeft(user);
+                UserLeft?.Invoke(this, new UserEventArgs(user));
             }
 
             // TODO: сделать что-то с этим

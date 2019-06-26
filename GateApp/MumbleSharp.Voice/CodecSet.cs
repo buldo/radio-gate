@@ -14,7 +14,7 @@ namespace MumbleSharp.Voice
                 case SpeechCodec.Opus:
                     return _opus.Value;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(codec), "Unsupported coded");
+                    throw new ArgumentOutOfRangeException(nameof(codec), "Unsupported codec");
             }
         }
     }

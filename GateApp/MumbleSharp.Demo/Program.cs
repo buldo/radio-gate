@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using MumbleSharp.Model;
 using MumbleSharp.Services;
+using MumbleSharp.Services.UsersManagement;
 
 namespace MumbleSharp.Demo
 {

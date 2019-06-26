@@ -6,7 +6,7 @@ using Gate.Opus.Api;
 
 namespace MumbleSharp.Voice.Codecs
 {
-    public class OpusCodec : IVoiceCodec
+    public class OpusCodec : IVoiceCodec, IDisposable
     {
         private readonly int[] _permittedFrameSizes;
         private readonly OpusDecoder _decoder;
@@ -53,6 +53,12 @@ namespace MumbleSharp.Voice.Codecs
             var pcmInShort = MemoryMarshal.Cast<byte, short>(pcm.AsSpan());
             var encoded = _encoder.Encode(pcmInShort, pcmInShort.Length);
             return encoded.ToArray();
+        }
+
+        public void Dispose()
+        {
+            _decoder.Dispose();
+            _encoder.Dispose();
         }
     }
 }

@@ -8,23 +8,14 @@ namespace MumbleSharp
     /// </summary>
     public class BasicMumbleProtocol
     {
-        private MumbleConnection _connection;
-
-        private Thread _encodingThread;
-        private UInt32 sequenceIndex;
-
-        public bool IsEncodingThreadRunning { get; set; }
-
         public BasicMumbleProtocol(MumbleConnection connection)
         {
-            _connection = connection;
 
             //_encodingThread = new Thread(EncodingThreadEntry)
             //{
             //    IsBackground = true
             //};
         }
-
 
         //public void SendVoice(Channel channel, ArraySegment<byte> buffer, bool whisper = false)
         //{

@@ -23,7 +23,7 @@ namespace MumbleSharp
         };
 
         private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
-        private IVoicePacketProcessor _voicePacketProcessor;
+        private Action<byte[], int> _voicePacketProcessor;
 
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
@@ -145,9 +145,9 @@ namespace MumbleSharp
             _tcp.SendVoice(PacketType.UDPTunnel, packet);
         }
 
-        public void RegisterVoicePacketProcessor(IVoicePacketProcessor voicePacketProcessor)
+        public void RegisterVoicePacketProcessor(Action<byte[],int> processor)
         {
-            _voicePacketProcessor = voicePacketProcessor;
+            _voicePacketProcessor = processor;
         }
 
         internal void ProcessCryptState(CryptSetup cryptSetup)
@@ -206,7 +206,7 @@ namespace MumbleSharp
 
         private void UdpOnEncodedVoiceReceived(object sender, VoiceReceivedEventArgs e)
         {
-            _voicePacketProcessor.ProcessPackage(e.Data, e.Type);
+            _voicePacketProcessor(e.Data, e.Type);
         }
     }
 }

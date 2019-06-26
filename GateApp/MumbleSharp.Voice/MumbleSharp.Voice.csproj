@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Gate.Opus\Gate.Opus.csproj" />
     <ProjectReference Include="..\MumbleSharp\MumbleSharp.csproj" />
+    <ProjectReference Include="..\NAudio.Pulse\NAudio.Pulse.csproj" />
   </ItemGroup>
 
 </Project>
