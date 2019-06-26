@@ -5,7 +5,7 @@ using MumbleSharp.Packets;
 
 namespace MumbleSharp.Services
 {
-    public class ServerSyncStateService : IService
+    public class ServerSyncStateService
     {
         /// <summary>
         /// If true, this indicates that the connection was setup and the server accept this client
@@ -16,12 +16,9 @@ namespace MumbleSharp.Services
 
         public event EventHandler<EventArgs> SyncReceived;
 
-        IEnumerable<PacketProcessor> IService.GetProcessors()
+        public ServerSyncStateService(MumbleConnection connection)
         {
-            return new[]
-            {
-                new PacketProcessor(PacketType.ServerSync, ProcessServerSyncPacket),
-            };
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ServerSync, ProcessServerSyncPacket));
         }
 
         /// <summary>

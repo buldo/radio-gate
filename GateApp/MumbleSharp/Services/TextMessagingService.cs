@@ -6,24 +6,17 @@ using MumbleSharp.Packets;
 
 namespace MumbleSharp.Services
 {
-    public class TextMessagingService : IService
+    public class TextMessagingService
     {
         private readonly UsersManagementService _usersManagementService;
 
         public event EventHandler<PersonalMessageEventArgs> PersonalMessageReceived;
         public event EventHandler<ChannelMessageEventArgs> ChannelMessageReceived;
 
-        IEnumerable<PacketProcessor> IService.GetProcessors()
-        {
-            return new []
-            {
-                new PacketProcessor(PacketType.TextMessage, ProcessTextMessagePacket),
-            };
-        }
-
-        public TextMessagingService(UsersManagementService usersManagementService)
+        public TextMessagingService(MumbleConnection connection, UsersManagementService usersManagementService)
         {
             _usersManagementService = usersManagementService;
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.TextMessage, ProcessTextMessagePacket));
         }
 
         /// <summary>

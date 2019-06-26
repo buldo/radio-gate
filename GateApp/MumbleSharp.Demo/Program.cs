@@ -58,15 +58,12 @@ namespace MumbleSharp.Demo
             }
 
             var connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port));
-            var serverStateService = new ServerSyncStateService();
-            var usersManagementService = new UsersManagementService(serverStateService);
+            var serverStateService = new ServerSyncStateService(connection);
+            var usersManagementService = new UsersManagementService(connection, serverStateService);
+            var tms = new TextMessagingService(connection, usersManagementService);
+            tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
+            tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
 
-            var services = new HashSet<IService>
-            {
-                serverStateService,
-                usersManagementService
-            };
-            var client = new MumbleClient(connection, services, null);
             connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
 
             Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };

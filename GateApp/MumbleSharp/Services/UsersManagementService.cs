@@ -8,15 +8,20 @@ using MumbleSharp.Packets;
 
 namespace MumbleSharp.Services
 {
-    public class UsersManagementService : IService
+    public class UsersManagementService
     {
         private readonly ServerSyncStateService _serverSyncStateService;
         private readonly ConcurrentDictionary<UInt32, User> _users = new ConcurrentDictionary<UInt32, User>();
         private readonly ConcurrentDictionary<UInt32, Channel> _channels = new ConcurrentDictionary<UInt32, Channel>();
-        public UsersManagementService(ServerSyncStateService serverSyncStateService)
+        public UsersManagementService(MumbleConnection connection, ServerSyncStateService serverSyncStateService)
         {
             _serverSyncStateService = serverSyncStateService;
             _serverSyncStateService.SyncReceived += ServerSyncStateServiceOnSyncReceived;
+
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserState, ProcessUserStatePacket));
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserRemove, ProcessUserRemovePacket));
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelState, ProcessChannelStatePacket));
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelRemove, ProcessChannelRemovePacket));
         }
 
         public User LocalUser { get; private set; }
@@ -26,17 +31,6 @@ namespace MumbleSharp.Services
         public bool TryGetUser(UInt32 sessionId, out User user) => _users.TryGetValue(sessionId, out user);
 
         public bool TryGetChannel(uint channelId, out Channel channel) => _channels.TryGetValue(channelId, out channel);
-
-        IEnumerable<PacketProcessor> IService.GetProcessors()
-        {
-            return new[]
-            {
-                new PacketProcessor(PacketType.UserState, ProcessUserStatePacket),
-                new PacketProcessor(PacketType.UserRemove, ProcessUserRemovePacket),
-                new PacketProcessor(PacketType.ChannelState, ProcessChannelStatePacket),
-                new PacketProcessor(PacketType.ChannelRemove, ProcessChannelRemovePacket),
-            };
-        }
 
         public Channel[] GetChannels() => _channels.Values.ToArray();
 

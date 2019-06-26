@@ -9,16 +9,13 @@ using MumbleSharp.Voice.Codecs;
 
 namespace MumbleSharp.Voice.Services
 {
-    public class VoiceService : IService, IVoicePacketProcessor
+    public class VoiceService
     {
         public SpeechCodec TransmissionCodec { get; private set; }
 
-        IEnumerable<PacketProcessor> IService.GetProcessors()
+        public VoiceService(MumbleConnection connection)
         {
-            return new []
-            {
-                new PacketProcessor( PacketType.CodecVersion, ProcessCodecVersionPacket),
-            };
+            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.CodecVersion, ProcessCodecVersionPacket));
         }
 
         private void ProcessCodecVersionPacket(object packet)
