@@ -1,6 +1,4 @@
 ﻿using MumbleProto;
-using MumbleSharp.Audio;
-using MumbleSharp.Audio.Codecs;
 using MumbleSharp.Packets;
 using System;
 using System.Collections.Generic;
@@ -9,6 +7,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Timers;
+using MumbleSharp.Services;
 
 namespace MumbleSharp
 {
@@ -24,7 +23,7 @@ namespace MumbleSharp
         };
 
         private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
-        private readonly List<Action<byte[], uint, long, SpeechCodec, SpeechTarget>> _voicePacketProcessors = new List<Action<byte[], uint, long, SpeechCodec, SpeechTarget>>();
+        private IVoicePacketProcessor _voicePacketProcessor;
 
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
@@ -53,7 +52,7 @@ namespace MumbleSharp
         }
 
         public IPEndPoint Host { get; }
-        
+
         /// <summary>
         /// Creates a connection to the server using the given address and port.
         /// </summary>
@@ -82,16 +81,10 @@ namespace MumbleSharp
                 _processors[(PacketType)val] = new List<Action<object>>();
             }
         }
-        
 
-        public void RegisterPacketProcessor(PacketType packetType, Action<object> processor)
+        public void RegisterPacketProcessor(PacketProcessor processor)
         {
-            _processors[packetType].Add(processor);
-        }
-
-        public void RegisterVoicePacketProcessor(Action<byte[], uint, long, SpeechCodec, SpeechTarget> processor)
-        {
-
+            _processors[processor.PacketType].Add(processor.Processor);
         }
 
         public void Connect(
@@ -152,8 +145,9 @@ namespace MumbleSharp
             _tcp.SendVoice(PacketType.UDPTunnel, packet);
         }
 
-        private void PackVoicePacket(ArraySegment<byte> packet)
+        public void RegisterVoicePacketProcessor(IVoicePacketProcessor voicePacketProcessor)
         {
+            _voicePacketProcessor = voicePacketProcessor;
         }
 
         internal void ProcessCryptState(CryptSetup cryptSetup)
@@ -210,12 +204,9 @@ namespace MumbleSharp
             }
         }
 
-        private void UdpOnEncodedVoiceReceived(object sender, EncodedVoiceReceivedEventArgs e)
+        private void UdpOnEncodedVoiceReceived(object sender, VoiceReceivedEventArgs e)
         {
-            foreach(var processor in _voicePacketProcessors)
-            {
-                processor(e.Data, e.Session, e.Sequence, e.Codec, e.Target);
-            }
+            _voicePacketProcessor.ProcessPackage(e.Data, e.Type);
         }
     }
 }

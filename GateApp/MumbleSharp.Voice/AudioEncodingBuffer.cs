@@ -1,9 +1,9 @@
-﻿using MumbleSharp.Audio.Codecs;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using MumbleSharp.Voice.Codecs;
 
-namespace MumbleSharp.Audio
+namespace MumbleSharp.Voice
 {
     public class AudioEncodingBuffer
     {

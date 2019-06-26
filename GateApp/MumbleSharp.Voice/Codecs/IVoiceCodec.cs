@@ -1,8 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace MumbleSharp.Audio.Codecs
+namespace MumbleSharp.Voice.Codecs
 {
     public interface IVoiceCodec
     {

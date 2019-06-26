@@ -1,5 +1,5 @@
-﻿using MumbleSharp.Audio;
-using MumbleSharp.Audio.Codecs;
+﻿using MumbleSharp.Voice;
+using MumbleSharp.Voice.Codecs;
 using NAudio.Wave;
 
 namespace MumbleSharp.Demo

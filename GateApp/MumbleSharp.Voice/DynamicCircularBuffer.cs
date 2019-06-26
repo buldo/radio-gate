@@ -24,11 +24,13 @@
 *************************************************************************/
 #endregion
 
-using System;
+
 
 //https://github.com/Kelindar/circular-buffer/blob/master/Source/ByteQueue.cs
 
-namespace MumbleSharp.Audio
+using System;
+
+namespace MumbleSharp.Voice
 {
     /// <summary>
     /// Defines a class that represents a resizable circular byte queue.

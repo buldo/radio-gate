@@ -1,6 +1,5 @@
 ﻿
 using MumbleProto;
-using MumbleSharp.Audio;
 using MumbleSharp.Packets;
 using System;
 using System.Collections.Concurrent;

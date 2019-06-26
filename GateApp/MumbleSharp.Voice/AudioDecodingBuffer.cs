@@ -1,10 +1,8 @@
-﻿using MumbleSharp.Audio.Codecs;
+﻿using System.Timers;
+using MumbleSharp.Voice.Codecs;
 using NAudio.Wave;
-using System;
-using System.Collections.Generic;
-using System.Timers;
 
-namespace MumbleSharp.Audio
+namespace MumbleSharp.Voice
 {
     /// <summary>
     /// Buffers up encoded audio packets and provides a constant stream of sound (silence if there is no more audio to decode)

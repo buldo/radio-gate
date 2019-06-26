@@ -1,4 +1,4 @@
-﻿namespace MumbleSharp.Audio.Codecs
+﻿namespace MumbleSharp.Voice.Codecs
 {
     /// <summary>
     /// 

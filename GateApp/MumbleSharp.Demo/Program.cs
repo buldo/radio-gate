@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using MumbleSharp.Model;
+using MumbleSharp.Services;
 
 namespace MumbleSharp.Demo
 {
@@ -57,16 +58,22 @@ namespace MumbleSharp.Demo
             }
 
             var connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port));
-            ConsoleMumbleProtocol protocol = new ConsoleMumbleProtocol(connection);
+            var serverStateService = new ServerSyncStateService();
+            var usersManagementService = new UsersManagementService(serverStateService);
+
+            var services = new HashSet<IService>
+            {
+                serverStateService,
+                usersManagementService
+            };
+            var client = new MumbleClient(connection, services, null);
             connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
 
             Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
             t.Start();
 
-            var r = new MicrophoneRecorder(protocol);
-
             //When localuser is set it means we're really connected
-            while (!protocol.ReceivedServerSync)
+            while (!serverStateService.ReceivedServerSync)
             {
                 Thread.Sleep(5000);
             }
@@ -77,9 +84,7 @@ namespace MumbleSharp.Demo
 //            }
 
 
-            Console.WriteLine("Connected as " + protocol.LocalUser.Id);
-
-            DrawChannel("", protocol.Channels.ToArray(), protocol.Users.ToArray(), protocol.RootChannel);
+            Console.WriteLine("Connected as " + usersManagementService.LocalUser.Id);
 
             Console.ReadLine();
         }
@@ -92,22 +97,6 @@ namespace MumbleSharp.Demo
         private static bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslpolicyerrors)
         {
             return true;
-        }
-
-        private static void DrawChannel(string indent, IEnumerable<Channel> channels, IEnumerable<User> users, Channel c)
-        {
-            Console.WriteLine(indent + c.Name + (c.Temporary ? "(temp)" : ""));
-
-            foreach (var user in users.Where(u => u.Channel.Equals(c)))
-            {
-                if (string.IsNullOrWhiteSpace(user.Comment))
-                    Console.WriteLine(indent + "-> " + user.Name);
-                else
-                    Console.WriteLine(indent + "-> " + user.Name + " (" + user.Comment + ")");
-            }
-
-            foreach (var channel in channels.Where(ch => ch.Parent == c.Id && ch.Parent != ch.Id))
-                DrawChannel(indent + "\t", channels, users, channel);
         }
 
         private static void UpdateLoop(MumbleConnection connection)

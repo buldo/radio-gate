@@ -1,7 +1,7 @@
-﻿using MumbleSharp.Audio.Codecs;
-using System;
+﻿using System;
+using MumbleSharp.Voice.Codecs;
 
-namespace MumbleSharp.Audio
+namespace MumbleSharp.Voice
 {
     public class CodecSet
     {

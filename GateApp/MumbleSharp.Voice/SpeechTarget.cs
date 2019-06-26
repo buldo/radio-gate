@@ -1,5 +1,5 @@
 ﻿
-namespace MumbleSharp.Audio
+namespace MumbleSharp.Voice
 {
     public enum SpeechTarget
     {

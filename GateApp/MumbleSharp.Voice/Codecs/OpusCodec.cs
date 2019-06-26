@@ -4,10 +4,9 @@ using System.Runtime.InteropServices;
 using Gate.Opus;
 using Gate.Opus.Api;
 
-namespace MumbleSharp.Audio.Codecs
+namespace MumbleSharp.Voice.Codecs
 {
-    public class OpusCodec
-        : IVoiceCodec
+    public class OpusCodec : IVoiceCodec
     {
         private readonly int[] _permittedFrameSizes;
         private readonly OpusDecoder _decoder;

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using MumbleSharp.Audio;
-using MumbleSharp.Audio.Codecs;
 
 namespace MumbleSharp
 {
@@ -21,7 +18,7 @@ namespace MumbleSharp
         }
 
         public event EventHandler<PingReceivedEventArgs> PingReceived;
-        public event EventHandler<EncodedVoiceReceivedEventArgs> EncodedVoiceReceived;
+        public event EventHandler<VoiceReceivedEventArgs> EncodedVoiceReceived;
 
         public bool IsConnected { get; private set; }
 
@@ -76,36 +73,12 @@ namespace MumbleSharp
             if (type == 1)
                 OnPingReceived(packet);
             else
-                UnpackVoicePacket(packet, type);
+                OnVoiceReceived(packet, type);
         }
 
-        private void UnpackVoicePacket(byte[] packet, int type)
+        private void OnVoiceReceived(byte[] data, int type)
         {
-            var vType = (SpeechCodec)type;
-            var target = (SpeechTarget)(packet[0] & 0x1F);
-
-            using (var reader = new UdpPacketReader(new MemoryStream(packet, 1, packet.Length - 1)))
-            {
-                UInt32 session = (uint)reader.ReadVarInt64();
-                Int64 sequence = reader.ReadVarInt64();
-
-                int size = (int)reader.ReadVarInt64();
-                size &= 0x1fff;
-
-                if (size == 0)
-                    return;
-
-                byte[] data = reader.ReadBytes(size);
-                if (data == null)
-                    return;
-
-                OnEncodedVoiceReceived(data, session, sequence, target, vType);
-            }
-        }
-
-        private void OnEncodedVoiceReceived(byte[] data, uint session, long sequence, SpeechTarget target, SpeechCodec codec)
-        {
-            var eventArgs = new EncodedVoiceReceivedEventArgs(data, session, sequence, target, codec);
+            var eventArgs = new VoiceReceivedEventArgs(data, type);
             EncodedVoiceReceived?.Invoke(this, eventArgs);
         }
 

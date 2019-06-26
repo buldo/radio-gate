@@ -1,9 +1,4 @@
-﻿using MumbleProto;
-using MumbleSharp.Audio;
-using MumbleSharp.Audio.Codecs;
-using MumbleSharp.Packets;
-using System;
-using NAudio.Wave;
+﻿using System;
 
 namespace MumbleSharp.Model
 {
@@ -34,16 +29,9 @@ namespace MumbleSharp.Model
         public string Name { get; set; }
         public string Comment { get; set; }
 
-        private readonly CodecSet _codecs = new CodecSet();
-
         public User(uint id)
         {
             Id = id;
-        }
-
-        protected internal IVoiceCodec GetCodec(SpeechCodec codec)
-        {
-            return _codecs.GetCodec(codec);
         }
 
         public override string ToString()
