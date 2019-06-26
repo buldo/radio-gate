@@ -67,14 +67,14 @@ namespace MumbleSharp.Demo
 
             connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
 
-            Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
-            t.Start();
+            //Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
+            //t.Start();
 
             //When localuser is set it means we're really connected
-            while (!serverStateService.ReceivedServerSync)
-            {
-                Thread.Sleep(5000);
-            }
+            //while (!serverStateService.ReceivedServerSync)
+            //{
+            //    Thread.Sleep(5000);
+            //}
 
 //            using (var src = new CancellationTokenSource())
 //            {
@@ -82,7 +82,7 @@ namespace MumbleSharp.Demo
 //            }
 
 
-            Console.WriteLine("Connected as " + usersManagementService.LocalUser.Id);
+            //Console.WriteLine("Connected as " + usersManagementService.LocalUser.Id);
 
             Console.ReadLine();
         }

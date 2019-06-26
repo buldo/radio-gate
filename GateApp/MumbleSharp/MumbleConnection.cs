@@ -127,7 +127,6 @@ namespace MumbleSharp
 
         public void Process()
         {
-            _tcp.Process();
             _udp.Process();
         }
 
