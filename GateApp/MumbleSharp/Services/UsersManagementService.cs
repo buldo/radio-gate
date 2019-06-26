@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using MumbleProto;
 using MumbleSharp.Model;
 using MumbleSharp.Packets;
@@ -10,18 +11,20 @@ namespace MumbleSharp.Services
 {
     public class UsersManagementService
     {
+        private readonly MumbleConnection _connection;
         private readonly ServerSyncStateService _serverSyncStateService;
         private readonly ConcurrentDictionary<UInt32, User> _users = new ConcurrentDictionary<UInt32, User>();
         private readonly ConcurrentDictionary<UInt32, Channel> _channels = new ConcurrentDictionary<UInt32, Channel>();
         public UsersManagementService(MumbleConnection connection, ServerSyncStateService serverSyncStateService)
         {
+            _connection = connection;
             _serverSyncStateService = serverSyncStateService;
             _serverSyncStateService.SyncReceived += ServerSyncStateServiceOnSyncReceived;
 
-            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserState, ProcessUserStatePacket));
-            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserRemove, ProcessUserRemovePacket));
-            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelState, ProcessChannelStatePacket));
-            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelRemove, ProcessChannelRemovePacket));
+            _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserState, ProcessUserStatePacket));
+            _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.UserRemove, ProcessUserRemovePacket));
+            _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelState, ProcessChannelStatePacket));
+            _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.ChannelRemove, ProcessChannelRemovePacket));
         }
 
         public User LocalUser { get; private set; }
@@ -33,6 +36,34 @@ namespace MumbleSharp.Services
         public bool TryGetChannel(uint channelId, out Channel channel) => _channels.TryGetValue(channelId, out channel);
 
         public Channel[] GetChannels() => _channels.Values.ToArray();
+
+        /// <summary>
+        /// Move user to a channel
+        /// </summary>
+        [PublicAPI]
+        public void MoveUser(User user, Channel channel)
+        {
+            if (user.Channel == channel)
+                return;
+
+            var userState = new UserState { Actor = user.Id, ChannelId = channel.Id };
+
+            _connection.SendControl<UserState>(PacketType.UserState, userState);
+        }
+
+        [PublicAPI]
+        public void JoinChannel(Channel channel)
+        {
+            var state = new UserState
+            {
+                Session = LocalUser.Id,
+                Actor = LocalUser.Id,
+                ChannelId = channel.Id
+            };
+
+            _connection.SendControl(PacketType.UserState, state);
+        }
+
 
         private void ProcessUserStatePacket(object packet)
         {

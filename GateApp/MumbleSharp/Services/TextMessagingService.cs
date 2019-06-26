@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
+using JetBrains.Annotations;
 using MumbleProto;
 using MumbleSharp.Model;
 using MumbleSharp.Packets;
@@ -8,6 +9,7 @@ namespace MumbleSharp.Services
 {
     public class TextMessagingService
     {
+        private readonly MumbleConnection _connection;
         private readonly UsersManagementService _usersManagementService;
 
         public event EventHandler<PersonalMessageEventArgs> PersonalMessageReceived;
@@ -15,8 +17,80 @@ namespace MumbleSharp.Services
 
         public TextMessagingService(MumbleConnection connection, UsersManagementService usersManagementService)
         {
+            _connection = connection;
             _usersManagementService = usersManagementService;
-            connection.RegisterPacketProcessor(new PacketProcessor(PacketType.TextMessage, ProcessTextMessagePacket));
+            _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.TextMessage, ProcessTextMessagePacket));
+        }
+
+        /// <summary>
+        /// Send a text message
+        /// </summary>
+        [PublicAPI]
+        public void SendMessage(User user, string message)
+        {
+            var messages = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            SendMessage(user, messages);
+        }
+
+        /// <summary>
+        /// Send a text message
+        /// </summary>
+        [PublicAPI]
+        public void SendMessage(User user, string[] message)
+        {
+            _connection.SendControl(PacketType.TextMessage, new TextMessage
+            {
+                Actor = _usersManagementService.LocalUser.Id,
+                Message = string.Join(Environment.NewLine, message),
+            });
+        }
+
+        /// <summary>
+        /// Send a text message
+        /// </summary>
+        [PublicAPI]
+        public void SendMessage(Channel channel, string[] message, bool recursive)
+        {
+            var msg = new TextMessage
+            {
+                Actor = _usersManagementService.LocalUser.Id,
+                Message = string.Join(Environment.NewLine, message),
+            };
+
+            if (recursive)
+            {
+                if (msg.TreeIds == null)
+                {
+                    msg.TreeIds = new [] { channel.Id };
+                }
+                else
+                {
+                    msg.TreeIds = msg.TreeIds.Concat(new uint[] { channel.Id }).ToArray();
+                }
+            }
+            else
+            {
+                if (msg.ChannelIds == null)
+                {
+                    msg.ChannelIds = new [] { channel.Id };
+                }
+                else
+                {
+                    msg.ChannelIds = msg.ChannelIds.Concat(new [] { channel.Id }).ToArray();
+                }
+            }
+
+            _connection.SendControl(PacketType.TextMessage, msg);
+        }
+
+        /// <summary>
+        /// Send a text message
+        /// </summary>
+        [PublicAPI]
+        public void SendMessage(Channel channel, string message, bool recursive)
+        {
+            var messages = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            SendMessage(channel, messages, recursive);
         }
 
         /// <summary>

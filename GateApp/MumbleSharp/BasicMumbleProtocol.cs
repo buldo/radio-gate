@@ -1,12 +1,5 @@
 ﻿using System.Threading;
-using MumbleProto;
-using MumbleSharp.Model;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using MumbleSharp.Packets;
-using Version = MumbleProto.Version;
 
 namespace MumbleSharp
 {
@@ -32,81 +25,6 @@ namespace MumbleSharp
             //};
         }
 
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">A text message (which will be split on newline characters)</param>
-        //public void SendMessage(User user, string message)
-        //{
-        //    var messages = message.Split( new []{"\r\n", "\n"}, StringSplitOptions.None);
-        //    SendMessage(user, messages);
-        //}
-
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">Individual lines of a text message</param>
-        //public void SendMessage(User user, string[] message)
-        //{
-        //    _connection.SendControl<TextMessage>(PacketType.TextMessage, new TextMessage
-        //    {
-        //        Actor = LocalUser.Id,
-        //        Message = string.Join(Environment.NewLine, message),
-        //    });
-        //}
-
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">Individual lines of a text message</param>
-        //public void SendMessage(Channel channel, string[] message, bool recursive)
-        //{
-        //    var msg = new TextMessage
-        //    {
-        //        Actor = LocalUser.Id,
-        //        Message = string.Join(Environment.NewLine, message),
-        //    };
-
-        //    if (recursive)
-        //    {
-        //        if (msg.TreeIds == null)
-        //            msg.TreeIds = new uint[] { channel.Id };
-        //        else
-        //            msg.TreeIds = msg.TreeIds.Concat(new uint[] { channel.Id }).ToArray();
-        //    }
-        //    else
-        //    {
-        //        if (msg.ChannelIds == null)
-        //            msg.ChannelIds = new uint[] { channel.Id };
-        //        else
-        //            msg.ChannelIds = msg.ChannelIds.Concat(new uint[] { channel.Id }).ToArray();
-        //    }
-
-        //    _connection.SendControl<TextMessage>(PacketType.TextMessage, msg);
-        //}
-
-        /// <summary>
-        /// Send a text message
-        /// </summary>
-        /// <param name="message">A text message (which will be split on newline characters)</param>
-        //public void SendMessage(Channel channel, string message, bool recursive)
-        //{
-        //    var messages = message.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        //    SendMessage(channel, messages, recursive);
-        //}
-
-        /// <summary>
-        /// Move user to a channel
-        /// </summary>
-        public void MoveUser(User user, Channel channel)
-        {
-            if (user.Channel == channel)
-                return;
-
-            var userState = new UserState { Actor = user.Id, ChannelId = channel.Id };
-
-            _connection.SendControl<UserState>(PacketType.UserState, userState);
-        }
 
         //public void SendVoice(Channel channel, ArraySegment<byte> buffer, bool whisper = false)
         //{
@@ -117,17 +35,6 @@ namespace MumbleSharp
         //    );
         //}
 
-        //public void JoinChannel(Channel channel)
-        //{
-        //    var state = new UserState
-        //    {
-        //        Session = LocalUser.Id,
-        //        Actor = LocalUser.Id,
-        //        ChannelId = channel.Id
-        //    };
-
-        //    _connection.SendControl<UserState>(PacketType.UserState, state);
-        //}
 
         //public void Close()
         //{
@@ -136,22 +43,6 @@ namespace MumbleSharp
         //    _connection = null;
         //    LocalUser = null;
         //}
-
-        #region Channels
-
-        protected virtual void ChannelJoined(Channel channel)
-        {
-        }
-
-        protected virtual void ChannelLeft(Channel channel)
-        {
-        }
-
-        #endregion
-
-        #region server setup
-
-        #endregion
 
         #region voice
 
