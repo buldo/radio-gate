@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Timers;
+using Microsoft.Extensions.Logging;
 using MumbleSharp.Services;
 
 namespace MumbleSharp
@@ -93,7 +94,8 @@ namespace MumbleSharp
             string[] tokens,
             string serverName,
             RemoteCertificateValidationCallback validateCertificate,
-            LocalCertificateSelectionCallback selectCertificate)
+            LocalCertificateSelectionCallback selectCertificate,
+            ILoggerFactory loggerFactory)
         {
             if (State != ConnectionStates.Disconnected)
                 throw new InvalidOperationException(
@@ -101,7 +103,7 @@ namespace MumbleSharp
 
             State = ConnectionStates.Connecting;
 
-            _tcp = new TcpSocket(Host, this);
+            _tcp = new TcpSocket(Host, this, loggerFactory);
             _tcp.PacketReceived += TcpOnPacketReceived;
             _tcp.Connect(username, password, tokens, serverName, validateCertificate, selectCertificate);
 

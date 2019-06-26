@@ -5,6 +5,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MumbleProto;
 using MumbleSharp.Packets;
 using ProtoBuf;
@@ -13,6 +14,8 @@ namespace MumbleSharp
 {
     internal class TcpSocket
     {
+        private readonly ILogger _logger;
+
         private const PrefixStyle serializationStyle = PrefixStyle.Fixed32BigEndian;
         readonly TcpClient _client;
         readonly IPEndPoint _host;
@@ -26,10 +29,11 @@ namespace MumbleSharp
         private readonly byte[] _packetTypeReadBuffer = new byte[2];
 
 
-        public TcpSocket(IPEndPoint host, MumbleConnection connection)
+        public TcpSocket(IPEndPoint host, MumbleConnection connection, ILoggerFactory loggerFactory)
         {
             _host = host;
             _connection = connection;
+            _logger = loggerFactory.CreateLogger<TcpSocket>();
             _client = new TcpClient();
         }
 
@@ -173,7 +177,7 @@ namespace MumbleSharp
                 throw new InvalidOperationException("Not connected");
 
             object packet;
-            Console.WriteLine("{0:HH:mm:ss}: {1}", DateTime.Now, type.ToString());
+            _logger.LogTrace(type.ToString());
 
             switch (type)
             {

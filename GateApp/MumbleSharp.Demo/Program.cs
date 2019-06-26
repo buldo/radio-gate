@@ -7,6 +7,8 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MumbleSharp.Model;
 using MumbleSharp.Services;
 using MumbleSharp.Services.UsersManagement;
@@ -17,6 +19,16 @@ namespace MumbleSharp.Demo
     {
         static void Main(string[] args)
         {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(
+                builder => builder
+                    .AddConsole(options => options.DisableColors = false)
+                    .SetMinimumLevel(LogLevel.Trace));
+
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+
+
             string addr, name, pass;
             int port;
             FileInfo serverConfigFile = new FileInfo(Path.Combine(Environment.CurrentDirectory , "server.txt"));
@@ -65,7 +77,7 @@ namespace MumbleSharp.Demo
             tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
             tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
 
-            connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
+            connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate, loggerFactory);
 
             //Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
             //t.Start();
