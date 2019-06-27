@@ -207,7 +207,7 @@ namespace MumbleSharp
 
         private void UdpOnEncodedVoiceReceived(object sender, VoiceReceivedEventArgs e)
         {
-            _voicePacketProcessor(e.Data, e.Type);
+            _voicePacketProcessor?.Invoke(e.Data, e.Type);
         }
     }
 }

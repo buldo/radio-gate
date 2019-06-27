@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using MumbleSharp.Model;
 using MumbleSharp.Services;
 using MumbleSharp.Services.UsersManagement;
+using MumbleSharp.Voice;
 
 namespace MumbleSharp.Demo
 {
@@ -74,6 +75,8 @@ namespace MumbleSharp.Demo
             var serverStateService = new ServerSyncStateService(connection);
             var usersManagementService = new UsersManagementService(connection, serverStateService);
             var tms = new TextMessagingService(connection, usersManagementService);
+            var voice = new VoiceService(connection, usersManagementService);
+
             tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
             tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
 
