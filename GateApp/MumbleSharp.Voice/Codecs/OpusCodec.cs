@@ -26,7 +26,7 @@ namespace MumbleSharp.Voice.Codecs
             _permittedFrameSizes = new int[frameSizes.Length];
             for (var i = 0; i < frameSizes.Length; i++)
             {
-                _permittedFrameSizes[i] = (int) (Constants.SAMPLE_RATE / 1000f * frameSizes[i]);
+                _permittedFrameSizes[i] = (int) ((Constants.SAMPLE_RATE / 1000f) * frameSizes[i]);
             }
         }
 
@@ -34,7 +34,7 @@ namespace MumbleSharp.Voice.Codecs
         {
             if (encodedData == null)
             {
-                _decoder.Decode(null, Constants.FRAME_SIZE);
+                _decoder.Decode(null, _permittedFrameSizes[3]);
                 return null;
             }
 
