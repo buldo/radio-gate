@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MumbleProto;
 using MumbleSharp.Packets;
 using MumbleSharp.Services;
@@ -12,13 +13,19 @@ namespace MumbleSharp.Voice
 {
     public class VoiceService
     {
+        private readonly ILogger _logger;
         private readonly MumbleConnection _connection;
         private readonly UsersManagementService _usersManagementService;
         private readonly ConcurrentDictionary<uint, UserAudioPlayer> _players = new ConcurrentDictionary<uint, UserAudioPlayer>();
         private readonly BufferedEncoder _bufferedEncoder = new BufferedEncoder();
 
-        public VoiceService(MumbleConnection connection, UsersManagementService usersManagementService)
+        public VoiceService(
+            MumbleConnection connection,
+            UsersManagementService usersManagementService,
+            ILoggerFactory loggerFactory)
         {
+            _logger = loggerFactory.CreateLogger<VoiceService>();
+
             _connection = connection;
             _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.CodecVersion, ProcessCodecVersionPacket));
             _connection.RegisterVoicePacketProcessor(ProcessIncomingVoicePackage);

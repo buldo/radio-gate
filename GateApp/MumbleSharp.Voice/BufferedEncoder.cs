@@ -17,16 +17,24 @@ namespace MumbleSharp.Voice
                 SingleWriter = true
             });
 
-        private readonly Pipe _incoming = new Pipe();
+        private readonly Channel<byte[]> _incomingPcm = Channel.CreateUnbounded<byte[]>(
+            new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = true
+            });
+
+        private readonly Pipe _pcmPipe = new Pipe();
 
         public BufferedEncoder()
         {
             Task.Factory.StartNew(EncodeAsync, TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(MovePcmAsync, TaskCreationOptions.LongRunning);
         }
 
         public void AddPcm(Span<byte> pcm)
         {
-            _incoming.Writer.Write(pcm);
+            _incomingPcm.Writer.TryWrite(pcm.ToArray());
         }
 
         public ChannelReader<byte[]> EncodedFrames => _readyFrames.Reader;
@@ -41,7 +49,7 @@ namespace MumbleSharp.Voice
 
             while (true)
             {
-                var readResult = await _incoming.Reader.ReadAsync();
+                var readResult = await _pcmPipe.Reader.ReadAsync();
                 var buffer = readResult.Buffer;
                 if (buffer.Length < maxBytes)
                 {
@@ -51,20 +59,35 @@ namespace MumbleSharp.Voice
                 byte[] pcm;
                 if (buffer.IsSingleSegment)
                 {
-                    var end = buffer.GetPosition(maxBytes - 1);
-                    pcm = buffer.Slice(0, end).ToArray();
-                    _incoming.Reader.AdvanceTo(buffer.Start, end);
+                    try
+                    {
+                        var end = buffer.GetPosition(maxBytes);
+                        pcm = buffer.Slice(0, end).ToArray();
+                        _pcmPipe.Reader.AdvanceTo(buffer.Start, end);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
+                    }
                 }
                 else
                 {
                     pcm = buffer.ToArray().AsSpan(0, maxBytes).ToArray();
-                    _incoming.Reader.AdvanceTo(buffer.Start, buffer.GetPosition(maxBytes));
+                    _pcmPipe.Reader.AdvanceTo(buffer.Start, buffer.GetPosition(maxBytes));
                 }
 
                 var encoded = codec.Encode(pcm.AsSpan());
 
                 await _readyFrames.Writer.WriteAsync(encoded);
             }
+        }
+
+        private async Task MovePcmAsync()
+        {
+            var data = await _incomingPcm.Reader.ReadAsync();
+            _pcmPipe.Writer.Write(data);
+            await _pcmPipe.Writer.FlushAsync();
         }
     }
 }

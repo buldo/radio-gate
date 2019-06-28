@@ -15,7 +15,7 @@ namespace MumbleSharp
     /// <summary>
     /// Handles the low level details of connecting to a mumble server. Once connection is established decoded packets are passed off to the MumbleProtocol for processing
     /// </summary>
-    public partial class MumbleConnection
+    public class MumbleConnection
     {
         private readonly Timer _pingTimer = new Timer()
         {
@@ -34,6 +34,7 @@ namespace MumbleSharp
 
         private TcpSocket _tcp;
         private UdpSocket _udp;
+        private readonly ILogger<MumbleConnection> _logger;
 
         public ConnectionStates State
         {
@@ -60,9 +61,9 @@ namespace MumbleSharp
         /// <param name="server">The server adress or IP.</param>
         /// <param name="port">The port the server listens to.</param>
         /// <param name="protocol">An object which will handle messages from the server</param>
-        public MumbleConnection(string server, int port)
+        public MumbleConnection(string server, int port, ILoggerFactory loggerFactory)
             : this(new IPEndPoint(
-                Dns.GetHostAddresses(server).First(a => a.AddressFamily == AddressFamily.InterNetwork), port))
+                Dns.GetHostAddresses(server).First(a => a.AddressFamily == AddressFamily.InterNetwork), port), loggerFactory)
         {
         }
 
@@ -71,8 +72,9 @@ namespace MumbleSharp
         /// </summary>
         /// <param name="host"></param>
         /// <param name="protocol"></param>
-        public MumbleConnection(IPEndPoint host)
+        public MumbleConnection(IPEndPoint host, ILoggerFactory loggerFactory)
         {
+            _logger = loggerFactory.CreateLogger<MumbleConnection>();
             _pingTimer.Elapsed += PingTimerOnElapsed;
             Host = host;
             State = ConnectionStates.Disconnected;
@@ -143,6 +145,7 @@ namespace MumbleSharp
             //the packet contains raw encoded voice data, but we need to put it into the proper packet format
             //UPD: packet prepare before this method called. See basic protocol
 
+            _logger.LogTrace($"{nameof(SendEncodedVoice)} invoked");
             _tcp.SendVoice(packet);
         }
 

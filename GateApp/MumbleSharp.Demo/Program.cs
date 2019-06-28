@@ -71,35 +71,23 @@ namespace MumbleSharp.Demo
                 }
             }
 
-            var connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port));
-            var serverStateService = new ServerSyncStateService(connection);
+            var connection = new MumbleConnection(new IPEndPoint(Dns.GetHostAddresses(addr).First(a => a.AddressFamily == AddressFamily.InterNetwork), port), loggerFactory);
+            var serverStateService = new ServerSyncStateService(connection, loggerFactory);
             var usersManagementService = new UsersManagementService(connection, serverStateService);
             var tms = new TextMessagingService(connection, usersManagementService);
-            var voice = new VoiceService(connection, usersManagementService);
-            var recorder = new Recorder(voice);
+            var voice = new VoiceService(connection, usersManagementService, loggerFactory);
+            var recorder = new Recorder(voice, loggerFactory);
 
             tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
             tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
 
             connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate, loggerFactory);
 
-            //Thread t = new Thread(a => UpdateLoop(connection)) { IsBackground = true };
-            //t.Start();
-
-            //When localuser is set it means we're really connected
             while (!serverStateService.ReceivedServerSync)
             {
                 Thread.Sleep(5000);
             }
             recorder.StartCapture();
-
-//            using (var src = new CancellationTokenSource())
-//            {
-//                src.Token.WaitHandle.WaitOne();
-//            }
-
-
-            //Console.WriteLine("Connected as " + usersManagementService.LocalUser.Id);
 
             Console.ReadLine();
         }
