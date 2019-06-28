@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Threading.Tasks;
 using MumbleProto;
 using MumbleSharp.Packets;
 using MumbleSharp.Services;
@@ -14,18 +15,33 @@ namespace MumbleSharp.Voice
         private readonly MumbleConnection _connection;
         private readonly UsersManagementService _usersManagementService;
         private readonly ConcurrentDictionary<uint, UserAudioPlayer> _players = new ConcurrentDictionary<uint, UserAudioPlayer>();
-
-        private SpeechCodec _transmissionCodec;
+        private readonly BufferedEncoder _bufferedEncoder = new BufferedEncoder();
 
         public VoiceService(MumbleConnection connection, UsersManagementService usersManagementService)
         {
             _connection = connection;
             _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.CodecVersion, ProcessCodecVersionPacket));
-            _connection.RegisterVoicePacketProcessor(ProcessPackage);
+            _connection.RegisterVoicePacketProcessor(ProcessIncomingVoicePackage);
 
             _usersManagementService = usersManagementService;
             _usersManagementService.UserJoined += UsersManagementServiceOnUserJoined;
             _usersManagementService.UserLeft += UsersManagementServiceOnUserLeft;
+
+            Task.Factory.StartNew(EncodedFramesSenderAsync, TaskCreationOptions.LongRunning);
+        }
+
+        private async Task EncodedFramesSenderAsync()
+        {
+            while (true)
+            {
+                var data = await _bufferedEncoder.EncodedFrames.ReadAsync();
+                _connection.SendEncodedVoice(data);
+            }
+        }
+
+        public void SendVoice(Span<byte> pcm)
+        {
+            _bufferedEncoder.AddPcm(pcm);
         }
 
         private void UsersManagementServiceOnUserLeft(object sender, UserEventArgs e)
@@ -44,15 +60,13 @@ namespace MumbleSharp.Voice
         private void ProcessCodecVersionPacket(object packet)
         {
             var codecVersion = (CodecVersion)packet;
-            if (codecVersion.Opus)
-                _transmissionCodec = SpeechCodec.Opus;
-            else if (codecVersion.PreferAlpha)
-                _transmissionCodec = SpeechCodec.CeltAlpha;
-            else
-                _transmissionCodec = SpeechCodec.CeltBeta;
+            if (!codecVersion.Opus)
+            {
+                throw new NotImplementedException("Only OPUS supported");
+            }
         }
 
-        private void ProcessPackage(byte[] packet, int type)
+        private void ProcessIncomingVoicePackage(byte[] packet, int type)
         {
             // var vType = (SpeechCodec)type;
             // var target = (SpeechTarget)(packet[0] & 0x1F);

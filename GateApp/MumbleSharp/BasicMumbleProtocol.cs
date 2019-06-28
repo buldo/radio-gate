@@ -17,9 +17,9 @@ namespace MumbleSharp
             //};
         }
 
-        //public void SendVoice(Channel channel, ArraySegment<byte> buffer, bool whisper = false)
+        //public void SendEncodedVoice(Channel channel, ArraySegment<byte> buffer, bool whisper = false)
         //{
-        //    SendVoice(
+        //    SendEncodedVoice(
         //        buffer,
         //        target: whisper ? SpeechTarget.WhisperToChannel : SpeechTarget.Normal,
         //        targetId: channel.Id
@@ -78,7 +78,7 @@ namespace MumbleSharp
         //                Array.Copy(packet, currentOffcet, packedData, voiceHeader.Length + header.Length,
         //                    currentBlockSize);
 
-        //                _connection.SendVoice(new ArraySegment<byte>(packedData));
+        //                _connection.SendEncodedVoice(new ArraySegment<byte>(packedData));
 
         //                sequenceIndex++;
         //                currentOffcet += currentBlockSize;
@@ -89,7 +89,7 @@ namespace MumbleSharp
         //    }
         //}
 
-        //public void SendVoice(ArraySegment<byte> pcm, SpeechTarget target, uint targetId)
+        //public void SendEncodedVoice(ArraySegment<byte> pcm, SpeechTarget target, uint targetId)
         //{
         //    _encodingBuffer.Add(pcm, target, targetId);
         //}

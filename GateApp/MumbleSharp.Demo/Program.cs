@@ -76,6 +76,7 @@ namespace MumbleSharp.Demo
             var usersManagementService = new UsersManagementService(connection, serverStateService);
             var tms = new TextMessagingService(connection, usersManagementService);
             var voice = new VoiceService(connection, usersManagementService);
+            var recorder = new Recorder(voice);
 
             tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
             tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
@@ -86,10 +87,11 @@ namespace MumbleSharp.Demo
             //t.Start();
 
             //When localuser is set it means we're really connected
-            //while (!serverStateService.ReceivedServerSync)
-            //{
-            //    Thread.Sleep(5000);
-            //}
+            while (!serverStateService.ReceivedServerSync)
+            {
+                Thread.Sleep(5000);
+            }
+            recorder.StartCapture();
 
 //            using (var src = new CancellationTokenSource())
 //            {

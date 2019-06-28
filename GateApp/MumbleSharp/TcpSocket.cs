@@ -123,17 +123,10 @@ namespace MumbleSharp
 
         //}
 
-        public void SendVoice(PacketType type, ArraySegment<byte> packet)
+        public void SendVoice(Span<byte> packet)
         {
-
-            //_writer.Write(IPAddress.HostToNetworkOrder((short) type));
-            //_writer.Write(IPAddress.HostToNetworkOrder(packet.Count));
-            //_writer.Write(packet.Array, packet.Offset, packet.Count);
-
-            //_writer.Flush();
-            //_ssl.Flush();
-            //_netStream.Flush();
-
+            var arr = packet.ToArray();
+            _writeChannel.Writer.TryWrite((PacketType.UDPTunnel, arr, arr.GetType()));
         }
 
         //public void SendBuffer(PacketType type, byte[] packet)
@@ -249,12 +242,23 @@ namespace MumbleSharp
                 {
                     var data = await _writeChannel.Reader.ReadAsync();
                     writer.Write(IPAddress.HostToNetworkOrder((short)data.PacketType));
-                    writer.Flush();
+                    if (data.PacketType == PacketType.UDPTunnel)
+                    {
+                        var arr = (byte[]) data.Packet;
+                        writer.Write(IPAddress.HostToNetworkOrder(arr.Length));
+                        writer.Write(arr);
 
-                    RuntimeTypeModel runtimeTypeModel = RuntimeTypeModel.Default;
-                    runtimeTypeModel.SerializeWithLengthPrefix(_ssl, data.Packet, data.NetPacketType, SerializationStyle, 0);
+                        writer.Flush();
+                    }
+                    else
+                    {
+                        writer.Flush();
 
-                    //Serializer.SerializeWithLengthPrefix<T>(_ssl, packet, serializationStyle);
+                        RuntimeTypeModel runtimeTypeModel = RuntimeTypeModel.Default;
+                        runtimeTypeModel.SerializeWithLengthPrefix(_ssl, data.Packet, data.NetPacketType, SerializationStyle, 0);
+                        //Serializer.SerializeWithLengthPrefix<T>(_ssl, packet, serializationStyle);
+                    }
+
                     _ssl.Flush();
                     _netStream.Flush();
                 }

@@ -137,13 +137,13 @@ namespace MumbleSharp
             _tcp.Send<T>(type, packet);
         }
 
-        public void SendVoice(ArraySegment<byte> packet)
+        public void SendEncodedVoice(Span<byte> packet)
         {
             //This is *totally wrong*
             //the packet contains raw encoded voice data, but we need to put it into the proper packet format
             //UPD: packet prepare before this method called. See basic protocol
 
-            _tcp.SendVoice(PacketType.UDPTunnel, packet);
+            _tcp.SendVoice(packet);
         }
 
         public void RegisterVoicePacketProcessor(Action<byte[],int> processor)
