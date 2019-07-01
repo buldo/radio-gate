@@ -88,19 +88,19 @@ namespace Gate.Opus
         /// <param name="inputPcmSamples">PCM samples to encode.</param>
         /// <param name="frameSize">How many bytes to encode.</param>
         /// <returns>Opus encoded audio buffer.</returns>
-        public ReadOnlySpan<byte> Encode(Span<short> inputPcmSamples, int frameSize)
+        public ReadOnlySpan<byte> Encode(ReadOnlySpan<short> inputPcmSamples, int frameSize)
         {
             CheckDisposed();
 
             var encoded = new byte[MaxDataBytes];
             var length = _api.opus_encode(_encoderState, inputPcmSamples.ToArray(), frameSize, encoded, frameSize);
-            
+
             if (length < 0)
                 throw new Exception("Encoding failed - " + ((Error)length).ToString());
 
             return encoded.AsSpan(0, length);
         }
-        
+
         public void Dispose()
         {
             if (_disposed)

@@ -48,7 +48,7 @@ namespace MumbleSharp.Voice.Codecs
 
         public IEnumerable<int> PermittedEncodingFrameSizes => _permittedFrameSizes;
 
-        public byte[] Encode(Span<byte> pcm)
+        public byte[] Encode(ReadOnlySpan<byte> pcm)
         {
             var pcmInShort = MemoryMarshal.Cast<byte, short>(pcm);
             var encoded = _encoder.Encode(pcmInShort, pcmInShort.Length);

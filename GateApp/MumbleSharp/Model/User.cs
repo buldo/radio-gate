@@ -11,20 +11,7 @@ namespace MumbleSharp.Model
         public bool SelfMuted { get; set; }
         public bool Suppress { get; set; }
 
-        private Channel _channel;
-
-        public Channel Channel
-        {
-            get => _channel;
-            set
-            {
-                _channel?.RemoveUser(this);
-
-                _channel = value;
-
-                value?.AddUser(this);
-            }
-        }
+        public Channel Channel { get; set; }
 
         public string Name { get; set; }
         public string Comment { get; set; }

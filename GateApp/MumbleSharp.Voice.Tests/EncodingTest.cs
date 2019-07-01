@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -130,9 +129,17 @@ namespace MumbleSharp.Voice.Tests
                     continue;
                 }
 
-                var data = buffer.Slice(buffer.Start, blockSize).ToArray();
-                ret.Add(codec.Encode(data));
-                pipeReader.AdvanceTo(buffer.GetPosition(blockSize));
+                var block = buffer.Slice(buffer.Start, blockSize);
+                if (block.IsSingleSegment)
+                {
+                    ret.Add(codec.Encode(block.FirstSpan));
+                }
+                else
+                {
+                    ret.Add(codec.Encode(block.ToArray()));
+                }
+
+                pipeReader.AdvanceTo(block.End);
             }
         }
 

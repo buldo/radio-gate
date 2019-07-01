@@ -29,7 +29,7 @@ namespace MumbleSharp
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
         internal readonly CryptState _cryptState = new CryptState();
-
+        private UInt32 sequenceIndex;
         private ConnectionStates _state;
 
         private TcpSocket _tcp;
@@ -139,14 +139,49 @@ namespace MumbleSharp
             _tcp.Send<T>(type, packet);
         }
 
-        public void SendEncodedVoice(Span<byte> packet)
+        public void SendEncodedVoice(Span<byte> packet, uint channelId)
         {
             //This is *totally wrong*
             //the packet contains raw encoded voice data, but we need to put it into the proper packet format
             //UPD: packet prepare before this method called. See basic protocol
 
             _logger.LogTrace($"{nameof(SendEncodedVoice)} invoked");
-            _tcp.SendVoice(packet);
+
+            if (packet != null)
+            {
+                int maxSize = 480;
+
+                //taken from JS port
+                for (int currentOffcet = 0; currentOffcet < packet.Length;)
+                {
+                    int currentBlockSize = Math.Min(packet.Length - currentOffcet, maxSize);
+
+                    byte type = (byte)4;
+                    //originaly [type = codec_type_id << 5 | whistep_chanel_id]. now we can talk only to normal chanel
+                    type = (byte)(type << 5);
+                    byte[] sequence = Var64.writeVarint64_alternative((UInt64)sequenceIndex);
+
+                    // Client side voice header.
+                    byte[] voiceHeader = new byte[1 + sequence.Length];
+                    voiceHeader[0] = type;
+                    sequence.CopyTo(voiceHeader, 1);
+
+                    byte[] header = Var64.writeVarint64_alternative((UInt64)currentBlockSize);
+                    byte[] packedData = new byte[voiceHeader.Length + header.Length + currentBlockSize];
+
+                    Array.Copy(voiceHeader, 0, packedData, 0, voiceHeader.Length);
+                    Array.Copy(header, 0, packedData, voiceHeader.Length, header.Length);
+                    //Array.Copy(packet.ToArray(), currentOffcet, packedData, voiceHeader.Length + header.Length, currentBlockSize);
+
+                    packet.Slice(currentOffcet, currentBlockSize)
+                        .CopyTo(packedData.AsSpan(voiceHeader.Length + header.Length, currentBlockSize));
+
+                    _tcp.SendVoice(packedData);
+
+                    sequenceIndex++;
+                    currentOffcet += currentBlockSize;
+                }
+            }
         }
 
         public void RegisterVoicePacketProcessor(Action<byte[],int> processor)

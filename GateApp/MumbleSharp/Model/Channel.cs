@@ -1,10 +1,4 @@
-﻿
-using MumbleProto;
-using MumbleSharp.Packets;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 
 namespace MumbleSharp.Model
 {
@@ -14,13 +8,6 @@ namespace MumbleSharp.Model
         public string Name { get; set; }
         public uint Id { get; private set; }
         public uint Parent { get; private set; }
-
-        // Using a concurrent dictionary as a concurrent hashset (why doesn't .net provide a concurrent hashset?!) - http://stackoverflow.com/a/18923091/108234
-        private readonly ConcurrentDictionary<User, bool> _users = new ConcurrentDictionary<User, bool>();
-        public IEnumerable<User> Users
-        {
-            get { return _users.Keys; }
-        }
 
         public Channel(uint id, string name, uint parent)
         {
@@ -54,17 +41,6 @@ namespace MumbleSharp.Model
         public override string ToString()
         {
             return Name;
-        }
-
-        internal void AddUser(User user)
-        {
-            _users.GetOrAdd(user, true);
-        }
-
-        internal void RemoveUser(User user)
-        {
-            bool _;
-            _users.TryRemove(user, out _);
         }
     }
 }

@@ -4,12 +4,15 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MumbleSharp.Voice.Codecs;
 
 namespace MumbleSharp.Voice
 {
     internal class BufferedEncoder
     {
+        private readonly ILogger<BufferedEncoder> _logger;
+
         private readonly Channel<byte[]> _readyFrames = Channel.CreateUnbounded<byte[]>(
             new UnboundedChannelOptions
             {
@@ -26,68 +29,54 @@ namespace MumbleSharp.Voice
 
         private readonly Pipe _pcmPipe = new Pipe();
 
-        public BufferedEncoder()
+        public BufferedEncoder(ILoggerFactory loggerFactory)
         {
-            Task.Factory.StartNew(EncodeAsync, TaskCreationOptions.LongRunning);
-            Task.Factory.StartNew(MovePcmAsync, TaskCreationOptions.LongRunning);
+            _logger = loggerFactory.CreateLogger<BufferedEncoder>();
+            Task.Factory.StartNew(() => EncodeAsync(_pcmPipe.Reader, _readyFrames.Writer, _logger), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => MovePcmAsync(), TaskCreationOptions.LongRunning);
         }
+
+        public ChannelReader<byte[]> EncodedFrames => _readyFrames.Reader;
 
         public void AddPcm(Span<byte> pcm)
         {
             _incomingPcm.Writer.TryWrite(pcm.ToArray());
         }
 
-        public ChannelReader<byte[]> EncodedFrames => _readyFrames.Reader;
-
-        private async Task EncodeAsync()
+        private static async Task EncodeAsync(PipeReader pipeReader, ChannelWriter<byte[]> readyFramesWriter, ILogger<BufferedEncoder> logger)
         {
             var codec = new OpusCodec();
             //Get the codec
 
             //How many bytes can we fit into the larget frame?
-            var maxBytes = codec.PermittedEncodingFrameSizes.Max() * sizeof(ushort);
+            var blockSize = codec.PermittedEncodingFrameSizes.Max() * sizeof(ushort);
 
             while (true)
             {
-                var readResult = await _pcmPipe.Reader.ReadAsync();
+                var readResult = await pipeReader.ReadAsync();
                 var buffer = readResult.Buffer;
-                if (buffer.Length < maxBytes)
+                if (buffer.Length < blockSize)
                 {
+                    pipeReader.AdvanceTo(buffer.Start, buffer.End);
                     continue;
                 }
 
-                byte[] pcm;
-                if (buffer.IsSingleSegment)
-                {
-                    try
-                    {
-                        var end = buffer.GetPosition(maxBytes);
-                        pcm = buffer.Slice(0, end).ToArray();
-                        _pcmPipe.Reader.AdvanceTo(buffer.Start, end);
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                        throw;
-                    }
-                }
-                else
-                {
-                    pcm = buffer.ToArray().AsSpan(0, maxBytes).ToArray();
-                    _pcmPipe.Reader.AdvanceTo(buffer.Start, buffer.GetPosition(maxBytes));
-                }
-
-                var encoded = codec.Encode(pcm.AsSpan());
-
-                await _readyFrames.Writer.WriteAsync(encoded);
+                var block = buffer.Slice(buffer.Start, blockSize);
+                var encoded = codec.Encode(block.IsSingleSegment ? block.First.Span : block.ToArray().AsSpan());
+                pipeReader.AdvanceTo(block.End);
+                await readyFramesWriter.WriteAsync(encoded);
+                logger.LogTrace("Encoded written");
             }
         }
 
         private async Task MovePcmAsync()
         {
-            var data = await _incomingPcm.Reader.ReadAsync();
-            _pcmPipe.Writer.Write(data);
-            await _pcmPipe.Writer.FlushAsync();
+            while (true)
+            {
+                var data = await _incomingPcm.Reader.ReadAsync();
+                _pcmPipe.Writer.Write(data);
+                await _pcmPipe.Writer.FlushAsync();
+            }
         }
     }
 }

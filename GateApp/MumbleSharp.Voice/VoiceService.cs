@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MumbleProto;
@@ -17,7 +18,7 @@ namespace MumbleSharp.Voice
         private readonly MumbleConnection _connection;
         private readonly UsersManagementService _usersManagementService;
         private readonly ConcurrentDictionary<uint, UserAudioPlayer> _players = new ConcurrentDictionary<uint, UserAudioPlayer>();
-        private readonly BufferedEncoder _bufferedEncoder = new BufferedEncoder();
+        private readonly BufferedEncoder _bufferedEncoder;
 
         public VoiceService(
             MumbleConnection connection,
@@ -25,6 +26,8 @@ namespace MumbleSharp.Voice
             ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<VoiceService>();
+
+            _bufferedEncoder = new BufferedEncoder(loggerFactory);
 
             _connection = connection;
             _connection.RegisterPacketProcessor(new PacketProcessor(PacketType.CodecVersion, ProcessCodecVersionPacket));
@@ -34,16 +37,26 @@ namespace MumbleSharp.Voice
             _usersManagementService.UserJoined += UsersManagementServiceOnUserJoined;
             _usersManagementService.UserLeft += UsersManagementServiceOnUserLeft;
 
-            Task.Factory.StartNew(EncodedFramesSenderAsync, TaskCreationOptions.LongRunning);
+            var sendingTask = Task.Factory.StartNew(() => EncodedFramesSenderAsync(_bufferedEncoder.EncodedFrames), TaskCreationOptions.LongRunning);
         }
 
-        private async Task EncodedFramesSenderAsync()
+        private async Task EncodedFramesSenderAsync(ChannelReader<byte[]> reader)
         {
-            while (true)
+            try
             {
-                var data = await _bufferedEncoder.EncodedFrames.ReadAsync();
-                _connection.SendEncodedVoice(data);
+                while (true)
+                {
+                    var data = await reader.ReadAsync();
+                    _connection.SendEncodedVoice(data, _usersManagementService.LocalUser.Channel.Id);
+                }
+
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "EncodedFramesSender exception");
+                throw;
+            }
+
         }
 
         public void SendVoice(Span<byte> pcm)
