@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MumbleSharp.Voice.Codecs;
 using NAudio.Wave;
@@ -17,20 +20,20 @@ namespace MumbleSharp.Voice.Tests
         [TestMethod]
         public void CheckEncodingRepeatability()
         {
-            var encoded1 = EncodeFile(Path.Combine("Content","test.wav"));
-            var encoded2 = EncodeFile(Path.Combine("Content","test.wav"));
+            var encoded1 = EncodeFile();
+            var encoded2 = EncodeFile();
 
             for (int i = 0; i < encoded1.Count ; i++)
             {
                 CollectionAssert.AreEqual(encoded1[i], encoded2[i]);
             }
-            ;
         }
 
         [TestMethod]
+        [Ignore]
         public void PlayEncodedDecoded()
         {
-            var encoded = EncodeFile(Path.Combine("Content", "test.wav"));
+            var encoded = EncodeFile();
 
             var decoded = new List<byte[]>();
             var codec = new OpusCodec();
@@ -57,14 +60,85 @@ namespace MumbleSharp.Voice.Tests
             evnt.WaitOne(TimeSpan.FromSeconds(30));
         }
 
-        private List<byte[]> EncodeFile(string fileName)
+        [TestMethod]
+        public async Task EncodeWithPipe()
         {
-            var fileReader = new WaveFileReader(fileName);
-            var resampler = new WdlResamplingSampleProvider(
-                new StereoToMonoSampleProvider(new Pcm16BitToSampleProvider(fileReader)),
-                Constants.SAMPLE_RATE);
+            var expected = EncodeFile();
+            var actual = await EncodeFileWithPipeAsync();
 
-            var resampledWaveProvider = resampler.ToWaveProvider16();
+            Assert.AreEqual(expected.Count, actual.Count);
+            for (int i = 0; i < expected.Count; i++)
+            {
+                CollectionAssert.AreEqual(expected[i], actual[i]);
+            }
+        }
+
+        private static async Task<List<byte[]>> EncodeFileWithPipeAsync()
+        {
+            var resampledWaveProvider = GetWaveProvider();
+
+            var pipe = new Pipe();
+            var ret = new List<byte[]>();
+            var codec = new OpusCodec();
+            var maxFrameSizeInBytes = codec.PermittedEncodingFrameSizes.Max() * 2;
+
+            await Task.WhenAll(
+                WriteToPipeAsync(resampledWaveProvider, pipe.Writer, maxFrameSizeInBytes),
+                EncodeFromPipeAsync(codec, pipe.Reader, maxFrameSizeInBytes, ret)
+            );
+            return ret;
+        }
+
+        private static async Task WriteToPipeAsync(IWaveProvider waveProvider, PipeWriter pipeWriter, int blockSize)
+        {
+            while(true)
+            {
+                var buffer = new byte[blockSize*2];
+                if (waveProvider.Read(buffer, 0, blockSize) != blockSize)
+                {
+                    break;
+                }
+
+                if (waveProvider.Read(buffer, blockSize, blockSize) != blockSize)
+                {
+                    pipeWriter.Write(buffer.AsSpan(0, blockSize));
+                    await pipeWriter.FlushAsync();
+                    break;
+                }
+
+                pipeWriter.Write(buffer);
+                await pipeWriter.FlushAsync();
+            }
+
+            pipeWriter.Complete();
+        }
+
+        private static async Task EncodeFromPipeAsync(OpusCodec codec, PipeReader pipeReader, int blockSize, List<byte[]> ret)
+        {
+            while (true)
+            {
+                var readResult = await pipeReader.ReadAsync();
+                var buffer = readResult.Buffer;
+                if (readResult.IsCompleted && buffer.Length < blockSize)
+                {
+                    break;
+                }
+
+                if (buffer.Length < blockSize)
+                {
+                    pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                    continue;
+                }
+
+                var data = buffer.Slice(buffer.Start, blockSize).ToArray();
+                ret.Add(codec.Encode(data));
+                pipeReader.AdvanceTo(buffer.GetPosition(blockSize));
+            }
+        }
+
+        private static List<byte[]> EncodeFile()
+        {
+            var resampledWaveProvider = GetWaveProvider();
 
             var codec = new OpusCodec();
             var maxFrameSize = codec.PermittedEncodingFrameSizes.Max();
@@ -78,5 +152,14 @@ namespace MumbleSharp.Voice.Tests
 
             return ret;
         }
+
+        private static IWaveProvider GetWaveProvider()
+        {
+            return new WdlResamplingSampleProvider(
+                new StereoToMonoSampleProvider(
+                    new Pcm16BitToSampleProvider(new WaveFileReader(Path.Combine("Content", "test.wav")))),
+                Constants.SAMPLE_RATE).ToWaveProvider16();
+        }
+
     }
 }
