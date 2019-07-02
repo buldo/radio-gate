@@ -82,6 +82,25 @@ namespace Gate.Opus
             }
         }
 
+        public bool IsVbrEnabled
+        {
+            get
+            {
+                CheckDisposed();
+                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.GET_VBR_REQUEST, out var isVbrEnabled);
+                if (ret < 0)
+                    throw new Exception("Encoder error - " + (ret).ToString());
+                return isVbrEnabled > 0;
+            }
+            set
+            {
+                CheckDisposed();
+                var ret = _api.opus_encoder_ctl(_encoderState, Ctl.SET_VBR_REQUEST, Convert.ToInt32(value));
+                if (ret != Error.OK)
+                    throw new Exception("Encoder error - " + (ret).ToString());
+            }
+        }
+
         /// <summary>
         /// Produces Opus encoded audio from PCM samples.
         /// </summary>

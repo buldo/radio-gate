@@ -16,13 +16,17 @@ namespace MumbleSharp.Voice.Codecs
         public OpusCodec()
         {
             _decoder = OpusFactory.CreateDecoder(Constants.SAMPLE_RATE, Constants.CHANNELS);
-            _decoder.IsForwardErrorCorrectionEnabled = true;
+            //_decoder.IsForwardErrorCorrectionEnabled = true;
+
             _encoder = OpusFactory.CreateEncoder(Constants.SAMPLE_RATE, Constants.CHANNELS, Application.VoIP);
-            _encoder.IsForwardErrorCorrectionEnabled = true;
+            //_encoder.IsForwardErrorCorrectionEnabled = true;
+            _encoder.IsVbrEnabled = false;
+            _encoder.Bitrate = Constants.BITRATE;
+
             _packetApi = OpusFactory.GetPacketApi();
 
-            float[] frameSizes = {2.5f, 5, 10, 20, 40, 60};
-            //float[] frameSizes = {2.5f, 5, 10, 20};
+            //float[] frameSizes = {2.5f, 5, 10, 20, 40, 60};
+            float[] frameSizes = {2.5f, 5, 10, 20};
 
             _permittedFrameSizes = new int[frameSizes.Length];
             for (var i = 0; i < frameSizes.Length; i++)

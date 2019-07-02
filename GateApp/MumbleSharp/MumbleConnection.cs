@@ -148,24 +148,29 @@ namespace MumbleSharp
                 {
                     _logger.LogError("Too big packet");
                 }
+
+                var packetBuilder = new UdpPacketBuilder();
+
+                // Header
+                int flags = 0;
+                flags |= (int)MumbleUdpMessageType.VoiceOpus << 5;
+                flags |= 0x00 & 0x1F; // TargetId
+                packetBuilder.WriteByte((byte)(flags & 0xFF));
+
+                // Packet Sequence Number
+                _sequenceIndex += 2;
+                packetBuilder.WriteVarLong(_sequenceIndex);
+
+                // Length and Terminated bit
                 int currentBlockSize = packet.Length;
+                //if (terminated)
+                //    currentBlockSize |= 1 << 13;
+                packetBuilder.WriteVarLong(currentBlockSize);
 
-                // Prepare data
-                var packetSequenceNumber = Var64.writeVarint64_alternative((UInt64)_sequenceIndex);
-                byte[] payloadHeader = Var64.writeVarint64_alternative((UInt64)(UInt16)currentBlockSize);
+                // Encoded data
+                packetBuilder.Write(packet.ToArray());
 
-                // Creating package
-                byte[] packedData = new byte[1 + packetSequenceNumber.Length + payloadHeader.Length + currentBlockSize];
-
-                // Fill package
-                packedData[0] = (byte)0b10000000;
-                packetSequenceNumber.AsSpan().CopyTo(packedData.AsSpan(1, packetSequenceNumber.Length));
-                payloadHeader.AsSpan().CopyTo(packedData.AsSpan(1 + packetSequenceNumber.Length, payloadHeader.Length));
-                packet.CopyTo(packedData.AsSpan(1 + packetSequenceNumber.Length + payloadHeader.Length, currentBlockSize));
-
-                _tcp.SendVoice(packedData);
-
-                _sequenceIndex++;
+                _tcp.SendVoice(packetBuilder.ToArray());
             }
         }
 
