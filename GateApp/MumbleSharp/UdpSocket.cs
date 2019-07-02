@@ -55,15 +55,15 @@ namespace MumbleSharp
 
         private void ReceivedEncryptedUdp(byte[] packet)
         {
-            byte[] plaintext = _connection._cryptState.Decrypt(packet, packet.Length);
+            //byte[] plaintext = _connection._cryptState.Decrypt(packet, packet.Length);
 
-            if (plaintext == null)
-            {
-                Console.WriteLine("Decryption failed");
-                return;
-            }
+            //if (plaintext == null)
+            //{
+            //    Console.WriteLine("Decryption failed");
+            //    return;
+            //}
 
-            ReceiveDecryptedUdp(plaintext);
+            // ReceiveDecryptedUdp(plaintext);
         }
 
         internal void ReceiveDecryptedUdp(byte[] packet)

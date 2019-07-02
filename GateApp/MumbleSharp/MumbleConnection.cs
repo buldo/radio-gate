@@ -28,7 +28,6 @@ namespace MumbleSharp
 
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
-        internal readonly CryptState _cryptState = new CryptState();
         private UInt32 _sequenceIndex;
         private ConnectionStates _state;
 
@@ -179,23 +178,6 @@ namespace MumbleSharp
             _voicePacketProcessor = processor;
         }
 
-        internal void ProcessCryptState(CryptSetup cryptSetup)
-        {
-            if (cryptSetup.ShouldSerializeKey() && cryptSetup.ShouldSerializeClientNonce() &&
-                cryptSetup.ShouldSerializeServerNonce()) // Full key setup
-            {
-                _cryptState.SetKeys(cryptSetup.Key, cryptSetup.ClientNonce, cryptSetup.ServerNonce);
-            }
-            else if (cryptSetup.ServerNonce != null) // Server syncing its nonce to us.
-            {
-                _cryptState.ServerNonce = cryptSetup.ServerNonce;
-            }
-            else // Server wants our nonce.
-            {
-                SendControl<CryptSetup>(PacketType.CryptSetup, new CryptSetup {ClientNonce = _cryptState.ClientNonce});
-            }
-        }
-
         private void PingTimerOnElapsed(object sender, ElapsedEventArgs e)
         {
             if (_state != ConnectionStates.Connected)
@@ -216,7 +198,7 @@ namespace MumbleSharp
             switch (e.PacketType)
             {
                 case PacketType.CryptSetup:
-                    ProcessCryptState((CryptSetup) e.Packet);
+                    //ProcessCryptState((CryptSetup) e.Packet);
                     _tcp.SendPing();
                     break;
                 case PacketType.UDPTunnel:
