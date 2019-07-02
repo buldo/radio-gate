@@ -3,7 +3,6 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -26,16 +25,13 @@ namespace MumbleSharp
         NetworkStream _netStream;
         SslStream _ssl;
 
-        readonly MumbleConnection _connection;
-
         private readonly byte[] _packetTypeReadBuffer = new byte[2];
         private readonly Channel<(PacketType PacketType, object Packet, Type NetPacketType)> _writeChannel;
 
 
-        public TcpSocket(IPEndPoint host, MumbleConnection connection, ILoggerFactory loggerFactory)
+        public TcpSocket(IPEndPoint host, ILoggerFactory loggerFactory)
         {
             _host = host;
-            _connection = connection;
             _logger = loggerFactory.CreateLogger<TcpSocket>();
             _client = new TcpClient();
 
@@ -100,7 +96,7 @@ namespace MumbleSharp
                 Opus = true,
             };
             auth.Tokens.AddRange(tokens ?? new string[0]);
-            auth.CeltVersions = new int[] {unchecked((int) 0x8000000b)};
+            auth.CeltVersions = new [] {unchecked((int) 0x8000000b)};
 
             Send(PacketType.Authenticate, auth);
         }
@@ -110,40 +106,10 @@ namespace MumbleSharp
             _writeChannel.Writer.TryWrite((type, packet, packet.GetType()));
         }
 
-        //public void Send(PacketType type, ArraySegment<byte> packet)
-        //{
-
-        //        _writer.Write(IPAddress.HostToNetworkOrder((short) type));
-        //        _writer.Write(IPAddress.HostToNetworkOrder(packet.Count));
-        //        _writer.Write(packet.Array, packet.Offset, packet.Count);
-
-        //        _writer.Flush();
-        //        _ssl.Flush();
-        //        _netStream.Flush();
-
-        //}
-
         public void SendVoice(Span<byte> packet)
         {
             var arr = packet.ToArray();
             _writeChannel.Writer.TryWrite((PacketType.UDPTunnel, arr, arr.GetType()));
-        }
-
-        //public void SendBuffer(PacketType type, byte[] packet)
-        //{
-        //    _writer.Write(IPAddress.HostToNetworkOrder((short) type));
-        //    _writer.Write(IPAddress.HostToNetworkOrder(packet.Length));
-        //    _writer.Write(packet, 0, packet.Length);
-
-        //    _writer.Flush();
-        //    _ssl.Flush();
-        //    _netStream.Flush();
-        //}
-
-        public void SendPing()
-        {
-            var ping = _connection._pingProcessor.CreateTcpPing();
-            Send<Ping>(PacketType.Ping, ping);
         }
 
         private void ReadPackage(PacketType type)
@@ -205,30 +171,16 @@ namespace MumbleSharp
                 case PacketType.TextMessage:
                     packet = Serializer.DeserializeWithLengthPrefix<TextMessage>(_ssl, SerializationStyle);
                     break;
-
-                case PacketType.Reject:
-                    throw new NotImplementedException();
-
                 case PacketType.UserList:
                     packet = Serializer.DeserializeWithLengthPrefix<UserList>(_ssl, SerializationStyle);
                     break;
-
                 case PacketType.SuggestConfig:
                     packet = Serializer.DeserializeWithLengthPrefix<SuggestConfig>(_ssl, SerializationStyle);
                     break;
-
-                case PacketType.Authenticate:
-                case PacketType.PermissionDenied:
-                case PacketType.ACL:
-                case PacketType.QueryUsers:
-                case PacketType.VoiceTarget:
-                case PacketType.UserStats:
-                case PacketType.RequestBlob:
-                case PacketType.BanList:
                 default:
-                    throw new NotImplementedException();
+                    _logger.LogError($"Packet {type} not supported");
+                    return;
             }
-
 
             OnPacketReceived(type, packet);
         }

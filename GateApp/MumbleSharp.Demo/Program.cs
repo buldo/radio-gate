@@ -81,7 +81,7 @@ namespace MumbleSharp.Demo
             tms.ChannelMessageReceived += (sender, eventArgs) => Console.WriteLine($"ChannelMsg: {eventArgs.Message.Text}");
             tms.PersonalMessageReceived += (sender, eventArgs) => Console.WriteLine($"PersonalMsg: {eventArgs.Message.Text}");
 
-            connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate, loggerFactory);
+            connection.Connect(name, pass, new string[0], addr, ValidateCertificate, SelectCertificate);
 
             while (!serverStateService.ReceivedServerSync)
             {

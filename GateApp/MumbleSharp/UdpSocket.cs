@@ -34,10 +34,9 @@ namespace MumbleSharp
             _client.Close();
         }
 
-        public void SendPing()
+        public void SendPing(byte[] ping)
         {
-            var buffer = _connection._pingProcessor.CreateUdpPing();
-            _client.Send(buffer, buffer.Length);
+            _client.Send(ping, ping.Length);
         }
 
         public void Process()

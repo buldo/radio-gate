@@ -2,11 +2,10 @@
 using MumbleSharp.Packets;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Timers;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using MumbleSharp.Services;
 
@@ -17,24 +16,24 @@ namespace MumbleSharp
     /// </summary>
     public class MumbleConnection
     {
-        private readonly Timer _pingTimer = new Timer()
+        private readonly Timer _pingTimer = new Timer
         {
             AutoReset = true,
             Interval = 20000
         };
 
+        private readonly ILogger<MumbleConnection> _logger;
+        private readonly PingProcessor _pingProcessor = new PingProcessor();
+        private readonly TcpSocket _tcp;
+        private readonly UdpSocket _udp;
+
         private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
         private Action<byte[], int> _voicePacketProcessor;
-
-        internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
         private UInt32 _sequenceIndex;
         private ConnectionStates _state;
 
-        private TcpSocket _tcp;
-        private UdpSocket _udp;
-        private readonly ILogger<MumbleConnection> _logger;
-
+        [PublicAPI]
         public ConnectionStates State
         {
             get => _state;
@@ -52,29 +51,23 @@ namespace MumbleSharp
             }
         }
 
+        [PublicAPI]
         public IPEndPoint Host { get; }
-
-        /// <summary>
-        /// Creates a connection to the server using the given address and port.
-        /// </summary>
-        /// <param name="server">The server adress or IP.</param>
-        /// <param name="port">The port the server listens to.</param>
-        /// <param name="protocol">An object which will handle messages from the server</param>
-        public MumbleConnection(string server, int port, ILoggerFactory loggerFactory)
-            : this(new IPEndPoint(
-                Dns.GetHostAddresses(server).First(a => a.AddressFamily == AddressFamily.InterNetwork), port), loggerFactory)
-        {
-        }
 
         /// <summary>
         /// Creates a connection to the server
         /// </summary>
-        /// <param name="host"></param>
-        /// <param name="protocol"></param>
         public MumbleConnection(IPEndPoint host, ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<MumbleConnection>();
             _pingTimer.Elapsed += PingTimerOnElapsed;
+
+            _tcp = new TcpSocket(Host, loggerFactory);
+            _tcp.PacketReceived += TcpOnPacketReceived;
+
+            _udp = new UdpSocket(Host, this);
+            _udp.EncodedVoiceReceived += UdpOnEncodedVoiceReceived;
+
             Host = host;
             State = ConnectionStates.Disconnected;
 
@@ -95,24 +88,20 @@ namespace MumbleSharp
             string[] tokens,
             string serverName,
             RemoteCertificateValidationCallback validateCertificate,
-            LocalCertificateSelectionCallback selectCertificate,
-            ILoggerFactory loggerFactory)
+            LocalCertificateSelectionCallback selectCertificate)
         {
             if (State != ConnectionStates.Disconnected)
-                throw new InvalidOperationException(
-                    string.Format("Cannot start connecting MumbleConnection when connection state is {0}", State));
+            {
+                throw new InvalidOperationException($"Cannot start connecting MumbleConnection when connection state is {State}");
+            }
 
             State = ConnectionStates.Connecting;
 
-            _tcp = new TcpSocket(Host, this, loggerFactory);
-            _tcp.PacketReceived += TcpOnPacketReceived;
             _tcp.Connect(username, password, tokens, serverName, validateCertificate, selectCertificate);
 
             // UDP Connection is disabled while decryption is broken
             // See: https://github.com/martindevans/MumbleSharp/issues/4
             // UDP being disabled does not reduce functionality, it forces packets to be sent over TCP instead
-            _udp = new UdpSocket(Host, this);
-            _udp.EncodedVoiceReceived += UdpOnEncodedVoiceReceived;
             //_udp.Connect();
 
             State = ConnectionStates.Connected;
@@ -130,7 +119,7 @@ namespace MumbleSharp
 
         public void SendControl<T>(PacketType type, T packet)
         {
-            _tcp.Send<T>(type, packet);
+            _tcp.Send(type, packet);
         }
 
         public void SendEncodedVoice(Span<byte> packet)
@@ -185,7 +174,7 @@ namespace MumbleSharp
                 return;
             }
 
-            _tcp.SendPing();
+            SendTcpPing();
 
             //if (_udp.IsConnected)
             //{
@@ -199,7 +188,7 @@ namespace MumbleSharp
             {
                 case PacketType.CryptSetup:
                     //ProcessCryptState((CryptSetup) e.Packet);
-                    _tcp.SendPing();
+                    SendTcpPing();
                     break;
                 case PacketType.UDPTunnel:
                     _udp.ReceiveDecryptedUdp((byte[]) e.Packet);
@@ -218,6 +207,18 @@ namespace MumbleSharp
         private void UdpOnEncodedVoiceReceived(object sender, VoiceReceivedEventArgs e)
         {
             _voicePacketProcessor?.Invoke(e.Data, e.Type);
+        }
+
+        private void SendTcpPing()
+        {
+            var ping = _pingProcessor.CreateTcpPing();
+            SendControl(PacketType.Ping, ping);
+        }
+
+        public void SendUdpPing()
+        {
+            var buffer = _pingProcessor.CreateUdpPing();
+            _udp.SendPing(buffer);
         }
     }
 }
