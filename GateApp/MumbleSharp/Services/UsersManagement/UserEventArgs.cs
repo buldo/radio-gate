@@ -1,5 +1,4 @@
 ﻿using System;
-using MumbleSharp.Model;
 
 namespace MumbleSharp.Services.UsersManagement
 {

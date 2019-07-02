@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using MumbleProto;
-using MumbleSharp.Model;
 using MumbleSharp.Packets;
 
 namespace MumbleSharp.Services.UsersManagement

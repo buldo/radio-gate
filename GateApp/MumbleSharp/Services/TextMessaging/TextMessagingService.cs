@@ -2,11 +2,10 @@
 using System.Linq;
 using JetBrains.Annotations;
 using MumbleProto;
-using MumbleSharp.Model;
 using MumbleSharp.Packets;
 using MumbleSharp.Services.UsersManagement;
 
-namespace MumbleSharp.Services
+namespace MumbleSharp.Services.TextMessaging
 {
     public class TextMessagingService
     {

@@ -1,20 +1,36 @@
 ﻿using System;
+using JetBrains.Annotations;
 
-namespace MumbleSharp.Model
+namespace MumbleSharp.Services.UsersManagement
 {
     public class User : IEquatable<User>
     {
+        [PublicAPI]
         public uint Id { get; }
-        public bool Deaf { get; set; }
-        public bool Muted { get; set; }
-        public bool SelfDeaf { get; set; }
-        public bool SelfMuted { get; set; }
-        public bool Suppress { get; set; }
 
-        public Channel Channel { get; set; }
+        [PublicAPI]
+        public bool Deaf { get; internal set; }
 
-        public string Name { get; set; }
-        public string Comment { get; set; }
+        [PublicAPI]
+        public bool Muted { get; internal set; }
+
+        [PublicAPI]
+        public bool SelfDeaf { get; internal set; }
+
+        [PublicAPI]
+        public bool SelfMuted { get; internal set; }
+
+        [PublicAPI]
+        public bool Suppress { get; internal set; }
+
+        [PublicAPI]
+        public Channel Channel { get; internal set; }
+
+        [PublicAPI]
+        public string Name { get; internal set; }
+
+        [PublicAPI]
+        public string Comment { get; internal set; }
 
         public User(uint id)
         {

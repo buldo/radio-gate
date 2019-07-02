@@ -9,8 +9,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MumbleSharp.Model;
 using MumbleSharp.Services;
+using MumbleSharp.Services.TextMessaging;
 using MumbleSharp.Services.UsersManagement;
 using MumbleSharp.Voice;
 
