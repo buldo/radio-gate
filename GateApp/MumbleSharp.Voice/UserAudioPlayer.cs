@@ -9,7 +9,7 @@ namespace MumbleSharp.Voice
     internal class UserAudioPlayer : IDisposable
     {
         private readonly Timer _transmissionTimer = new Timer(100);
-        private readonly OpusCodec _codec = new OpusCodec();
+        private readonly MumbleOpusDecoder _codec = new MumbleOpusDecoder();
         private readonly BufferedWaveProvider _waveProvider;
         private readonly IWavePlayer _player;
         private long _lastDecodedSequence = -1;

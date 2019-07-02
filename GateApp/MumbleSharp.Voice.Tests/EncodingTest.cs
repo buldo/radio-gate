@@ -35,10 +35,10 @@ namespace MumbleSharp.Voice.Tests
             var encoded = EncodeFile();
 
             var decoded = new List<byte[]>();
-            var codec = new OpusCodec();
+            var decoder = new MumbleOpusDecoder();
             foreach (var frame in encoded)
             {
-                decoded.Add(codec.Decode(frame));
+                decoded.Add(decoder.Decode(frame));
             }
 
             var bufferedWaveProvider = new BufferedWaveProvider(new WaveFormat(Constants.SAMPLE_RATE, 1))
@@ -78,12 +78,12 @@ namespace MumbleSharp.Voice.Tests
 
             var pipe = new Pipe();
             var ret = new List<byte[]>();
-            var codec = new OpusCodec();
-            var maxFrameSizeInBytes = codec.PermittedEncodingFrameSizes.Max() * 2;
+            var encoder = new MumbleOpusEncoder();
+            var maxFrameSizeInBytes = MumbleOpusHelper.PermittedEncodingFrameSizes.Max() * 2;
 
             await Task.WhenAll(
                 WriteToPipeAsync(resampledWaveProvider, pipe.Writer, maxFrameSizeInBytes),
-                EncodeFromPipeAsync(codec, pipe.Reader, maxFrameSizeInBytes, ret)
+                EncodeFromPipeAsync(encoder, pipe.Reader, maxFrameSizeInBytes, ret)
             );
             return ret;
         }
@@ -112,7 +112,7 @@ namespace MumbleSharp.Voice.Tests
             pipeWriter.Complete();
         }
 
-        private static async Task EncodeFromPipeAsync(OpusCodec codec, PipeReader pipeReader, int blockSize, List<byte[]> ret)
+        private static async Task EncodeFromPipeAsync(MumbleOpusEncoder codec, PipeReader pipeReader, int blockSize, List<byte[]> ret)
         {
             while (true)
             {
@@ -147,8 +147,8 @@ namespace MumbleSharp.Voice.Tests
         {
             var resampledWaveProvider = GetWaveProvider();
 
-            var codec = new OpusCodec();
-            var maxFrameSize = codec.PermittedEncodingFrameSizes.Max();
+            var codec = new MumbleOpusEncoder();
+            var maxFrameSize = MumbleOpusHelper.PermittedEncodingFrameSizes.Max();
             var maxFrameSizeInBytes = maxFrameSize * 2;
             var ret = new List<byte[]>();
             var buffer = new byte[maxFrameSizeInBytes];

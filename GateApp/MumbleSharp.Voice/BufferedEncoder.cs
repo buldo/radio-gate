@@ -45,11 +45,11 @@ namespace MumbleSharp.Voice
 
         private static async Task EncodeAsync(PipeReader pipeReader, ChannelWriter<byte[]> readyFramesWriter, ILogger<BufferedEncoder> logger)
         {
-            var codec = new OpusCodec();
+            var codec = new MumbleOpusEncoder();
             //Get the codec
 
             //How many bytes can we fit into the larget frame?
-            var blockSize = codec.PermittedEncodingFrameSizes.Max() * sizeof(ushort);
+            var blockSize = MumbleOpusHelper.PermittedEncodingFrameSizes.Max() * sizeof(ushort);
 
             while (true)
             {
