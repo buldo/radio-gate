@@ -87,7 +87,7 @@ namespace MumbleSharp
             MumbleProto.Version version = new MumbleProto.Version
             {
                 Release = "MumbleSharp",
-                version = (1 << 16) | (2 << 8) | (0 & 0xFF),
+                version = (1 << 16) | (2 << 8) | (5 & 0xFF),
                 Os = Environment.OSVersion.ToString(),
                 OsVersion = Environment.OSVersion.VersionString,
             };

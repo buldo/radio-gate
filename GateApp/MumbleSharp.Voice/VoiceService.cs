@@ -47,7 +47,7 @@ namespace MumbleSharp.Voice
                 while (true)
                 {
                     var data = await reader.ReadAsync();
-                    _connection.SendEncodedVoice(data, _usersManagementService.LocalUser.Channel.Id);
+                    _connection.SendEncodedVoice(data);
                 }
 
             }

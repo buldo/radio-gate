@@ -24,7 +24,7 @@ namespace MumbleSharp.Demo
             serviceCollection.AddLogging(
                 builder => builder
                     .AddConsole(options => options.DisableColors = false)
-                    .SetMinimumLevel(LogLevel.Trace));
+                    .SetMinimumLevel(LogLevel.Debug));
 
             var serviceProvider = serviceCollection.BuildServiceProvider();
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
@@ -100,14 +100,6 @@ namespace MumbleSharp.Demo
         private static bool ValidateCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslpolicyerrors)
         {
             return true;
-        }
-
-        private static void UpdateLoop(MumbleConnection connection)
-        {
-            while (connection.State != ConnectionStates.Disconnected)
-            {
-                connection.Process();
-            }
         }
     }
 }

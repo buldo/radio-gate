@@ -63,7 +63,7 @@ namespace MumbleSharp.Voice
                 return;
 
             //_logger.LogTrace($"Captured {e.BytesRecorded} bytes");
-            
+
             _voiceService.SendVoice(e.Buffer.AsSpan(0, e.BytesRecorded));
         }
     }

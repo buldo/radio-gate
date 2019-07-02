@@ -22,6 +22,7 @@ namespace MumbleSharp.Voice.Codecs
             _packetApi = OpusFactory.GetPacketApi();
 
             float[] frameSizes = {2.5f, 5, 10, 20, 40, 60};
+            //float[] frameSizes = {2.5f, 5, 10, 20};
 
             _permittedFrameSizes = new int[frameSizes.Length];
             for (var i = 0; i < frameSizes.Length; i++)

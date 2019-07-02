@@ -20,7 +20,7 @@ namespace MumbleSharp
         private readonly Timer _pingTimer = new Timer()
         {
             AutoReset = true,
-            Interval = 5000
+            Interval = 20000
         };
 
         private readonly Dictionary<PacketType, List<Action<object>>> _processors = new Dictionary<PacketType, List<Action<object>>>();
@@ -29,7 +29,7 @@ namespace MumbleSharp
         internal readonly PingProcessor _pingProcessor = new PingProcessor();
 
         internal readonly CryptState _cryptState = new CryptState();
-        private UInt32 sequenceIndex;
+        private UInt32 _sequenceIndex;
         private ConnectionStates _state;
 
         private TcpSocket _tcp;
@@ -123,15 +123,10 @@ namespace MumbleSharp
         {
             State = ConnectionStates.Disconnecting;
 
-            _udp.Close();
+            //_udp.Close();
             _tcp.Close();
 
             State = ConnectionStates.Disconnected;
-        }
-
-        public void Process()
-        {
-            _udp.Process();
         }
 
         public void SendControl<T>(PacketType type, T packet)
@@ -139,7 +134,7 @@ namespace MumbleSharp
             _tcp.Send<T>(type, packet);
         }
 
-        public void SendEncodedVoice(Span<byte> packet, uint channelId)
+        public void SendEncodedVoice(Span<byte> packet)
         {
             //This is *totally wrong*
             //the packet contains raw encoded voice data, but we need to put it into the proper packet format
@@ -149,38 +144,28 @@ namespace MumbleSharp
 
             if (packet != null)
             {
-                int maxSize = 480;
-
-                //taken from JS port
-                for (int currentOffcet = 0; currentOffcet < packet.Length;)
+                if (packet.Length > 8191)
                 {
-                    int currentBlockSize = Math.Min(packet.Length - currentOffcet, maxSize);
-
-                    byte type = (byte)4;
-                    //originaly [type = codec_type_id << 5 | whistep_chanel_id]. now we can talk only to normal chanel
-                    type = (byte)(type << 5);
-                    byte[] sequence = Var64.writeVarint64_alternative((UInt64)sequenceIndex);
-
-                    // Client side voice header.
-                    byte[] voiceHeader = new byte[1 + sequence.Length];
-                    voiceHeader[0] = type;
-                    sequence.CopyTo(voiceHeader, 1);
-
-                    byte[] header = Var64.writeVarint64_alternative((UInt64)currentBlockSize);
-                    byte[] packedData = new byte[voiceHeader.Length + header.Length + currentBlockSize];
-
-                    Array.Copy(voiceHeader, 0, packedData, 0, voiceHeader.Length);
-                    Array.Copy(header, 0, packedData, voiceHeader.Length, header.Length);
-                    //Array.Copy(packet.ToArray(), currentOffcet, packedData, voiceHeader.Length + header.Length, currentBlockSize);
-
-                    packet.Slice(currentOffcet, currentBlockSize)
-                        .CopyTo(packedData.AsSpan(voiceHeader.Length + header.Length, currentBlockSize));
-
-                    _tcp.SendVoice(packedData);
-
-                    sequenceIndex++;
-                    currentOffcet += currentBlockSize;
+                    _logger.LogError("Too big packet");
                 }
+                int currentBlockSize = packet.Length;
+
+                // Prepare data
+                var packetSequenceNumber = Var64.writeVarint64_alternative((UInt64)_sequenceIndex);
+                byte[] payloadHeader = Var64.writeVarint64_alternative((UInt64)(UInt16)currentBlockSize);
+
+                // Creating package
+                byte[] packedData = new byte[1 + packetSequenceNumber.Length + payloadHeader.Length + currentBlockSize];
+
+                // Fill package
+                packedData[0] = (byte)0b10000000;
+                packetSequenceNumber.AsSpan().CopyTo(packedData.AsSpan(1, packetSequenceNumber.Length));
+                payloadHeader.AsSpan().CopyTo(packedData.AsSpan(1 + packetSequenceNumber.Length, payloadHeader.Length));
+                packet.CopyTo(packedData.AsSpan(1 + packetSequenceNumber.Length + payloadHeader.Length, currentBlockSize));
+
+                _tcp.SendVoice(packedData);
+
+                _sequenceIndex++;
             }
         }
 
@@ -215,10 +200,10 @@ namespace MumbleSharp
 
             _tcp.SendPing();
 
-            if (_udp.IsConnected)
-            {
-                _udp.SendPing();
-            }
+            //if (_udp.IsConnected)
+            //{
+            //    _udp.SendPing();
+            //}
         }
 
         private void TcpOnPacketReceived(object sender, PacketReceivedEventArgs e)
