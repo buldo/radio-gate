@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -37,44 +39,71 @@ namespace MumbleSharp.Voice
             _usersManagementService.UserJoined += UsersManagementServiceOnUserJoined;
             _usersManagementService.UserLeft += UsersManagementServiceOnUserLeft;
 
-            var sendingTask = Task.Factory.StartNew(() => EncodedFramesSenderAsync(_bufferedEncoder.EncodedFrames), TaskCreationOptions.LongRunning);
+            var sendingTask = Task.Factory.StartNew(() => SendEncodedFramesAsync(_bufferedEncoder.EncodedFrames), TaskCreationOptions.LongRunning);
         }
 
-        private async Task EncodedFramesSenderAsync(ChannelReader<byte[]> reader)
+        public bool IsSendingToServer { get; private set; }
+
+        public event EventHandler<EventArgs> UsersStateChanged;
+
+        public void StartSendingVoice()
         {
-            try
+            if(!IsSendingToServer)
             {
-                while (true)
-                {
-                    var data = await reader.ReadAsync();
-                    _connection.SendEncodedVoice(data);
-                }
+                IsSendingToServer = true;
 
+                // TODO: Добавить всякого разного, запускающего отправку голоса
             }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "EncodedFramesSender exception");
-                throw;
-            }
-
         }
 
-        public void SendVoice(Span<byte> pcm)
+        public void StopSendingVoice()
         {
-            _bufferedEncoder.AddPcm(pcm);
+            if(IsSendingToServer)
+            {
+                IsSendingToServer = false;
+                // TODO: добавить отправку стоп бита
+            }
+        }
+
+        public IEnumerable<(uint UserId, UserVoiceState State)> GetUsersState()
+        {
+            return _players.Select(p => (p.Key, p.Value.State)).ToArray();
+        }
+
+        public void AddVoiceFramesToSendBuffer(Span<byte> pcm)
+        {
+            if (IsSendingToServer)
+            {
+                _bufferedEncoder.AddPcm(pcm);
+            }
         }
 
         private void UsersManagementServiceOnUserLeft(object sender, UserEventArgs e)
         {
             if (_players.TryRemove(e.User.Id, out var player))
             {
+                player.StateChanged -= PlayerOnStateChanged;
                 player.Dispose();
             }
         }
 
         private void UsersManagementServiceOnUserJoined(object sender, UserEventArgs e)
         {
-            _players.AddOrUpdate(e.User.Id, new UserAudioPlayer(e.User.Id), (u, player) => player);
+            if(!_players.ContainsKey(e.User.Id))
+            {
+                var player = new UserAudioPlayer(e.User.Id);
+                player.StateChanged += PlayerOnStateChanged;
+                if(_players.TryAdd(e.User.Id, player))
+                {
+                    player.StateChanged -= PlayerOnStateChanged;
+                    player.Dispose();
+                }
+            }
+        }
+
+        private void PlayerOnStateChanged(object sender, VoiceStateChangedEventArgs e)
+        {
+            UsersStateChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ProcessCodecVersionPacket(object packet)
@@ -110,7 +139,30 @@ namespace MumbleSharp.Voice
                 {
                     player.ProcessEncodedVoice(data, sequence);
                 }
+                else
+                {
+                    _logger.LogWarning($"Voice package for unknown session {session}");
+                }
             }
+        }
+
+        private async Task SendEncodedFramesAsync(ChannelReader<byte[]> reader)
+        {
+            try
+            {
+                while (true)
+                {
+                    var data = await reader.ReadAsync();
+                    _connection.SendEncodedVoice(data);
+                }
+
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "EncodedFramesSender exception");
+                throw;
+            }
+
         }
     }
 }

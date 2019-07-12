@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="3.0.3" />
+    <PackageReference Include="Prism.DryIoc" Version="7.2.0.1347-pre" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gate.Radio.Emulator.Service\Gate.Radio.Emulator.Service.csproj" />
+  </ItemGroup>
+
+</Project>

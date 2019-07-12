@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Timers;
 using MumbleSharp.Voice.Codecs;
 using NAudio.Pulse;
@@ -13,6 +14,7 @@ namespace MumbleSharp.Voice
         private readonly BufferedWaveProvider _waveProvider;
         private readonly IWavePlayer _player;
         private long _lastDecodedSequence = -1;
+        private UserVoiceState _state;
 
         public UserAudioPlayer(uint userId)
         {
@@ -24,6 +26,35 @@ namespace MumbleSharp.Voice
             _player.Play();
             _player.PlaybackStopped += (sender, args) => Console.WriteLine("Playback stopped: " + args.Exception);
         }
+
+        public UserVoiceState State
+        {
+            get => _state;
+            private set
+            {
+                if(_state != value)
+                {
+                    var oldState = _state;
+                    _state = value;
+                    StateChanged?.Invoke(this, new VoiceStateChangedEventArgs(oldState, value));
+
+                    if (value == UserVoiceState.Idle)
+                    {
+                        _lastDecodedSequence = -1;
+                    }
+
+                    if(value == UserVoiceState.Tx)
+                    {
+                        if (!_transmissionTimer.Enabled)
+                        {
+                            _transmissionTimer.Start();
+                        }
+                    }
+                }
+            }
+        }
+
+        public event EventHandler<VoiceStateChangedEventArgs> StateChanged;
 
         public void ProcessEncodedVoice(byte[] data, long sequence)
         {
@@ -38,10 +69,15 @@ namespace MumbleSharp.Voice
 
             var d = _codec.Decode(data);
             _waveProvider.AddSamples(d, 0, d.Length);
-            if (!_transmissionTimer.Enabled)
-            {
-                _transmissionTimer.Start();
-            }
+            State = UserVoiceState.Tx;
+            // TODO: добавить сюда вычитывание стоп бита
+        }
+
+        public void Dispose()
+        {
+            _transmissionTimer.Dispose();
+            _codec.Dispose();
+            _player.Dispose();
         }
 
         private static IWavePlayer CreateWavePlayer(uint id)
@@ -59,14 +95,7 @@ namespace MumbleSharp.Voice
 
         private void TransmissionTimerOnElapsed(object sender, ElapsedEventArgs e)
         {
-            _lastDecodedSequence = -1;
-        }
-
-        public void Dispose()
-        {
-            _transmissionTimer.Dispose();
-            _codec.Dispose();
-            _player.Dispose();
+            State = UserVoiceState.Idle;
         }
     }
 }

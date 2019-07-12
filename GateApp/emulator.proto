@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+service RadioEmulator {
+	rpc StartTransceiving(Empty) returns (Empty){}
+	rpc StopTransceiving(Empty) returns (Empty){}
+}
+
+message Empty{}
