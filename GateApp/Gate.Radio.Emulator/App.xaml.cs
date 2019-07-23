@@ -24,17 +24,20 @@ namespace Gate.Radio.Emulator
     public partial class App : PrismApplication
     {
         private IHost _host;
+        private readonly RadioStateService _radioStateService = new RadioStateService();
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            containerRegistry.RegisterInstance(typeof(RadioStateService), new RadioStateService());
+            containerRegistry.RegisterInstance(typeof(RadioStateService), _radioStateService);
         }
 
         protected override Window CreateShell()
         {
             _host = CreateHostBuilder().Build();
             _host.Start();
-            return ServiceLocator.Current.GetInstance<MainWindow>();
+            var mainWindow = ServiceLocator.Current.GetInstance<MainWindow>();
+            mainWindow.DataContext = new MainWindowViewModel(_radioStateService);
+            return mainWindow;
         }
 
         protected override void OnStartup(StartupEventArgs e)
@@ -50,11 +53,11 @@ namespace Gate.Radio.Emulator
 
         private IHostBuilder CreateHostBuilder() =>
             Host.CreateDefaultBuilder()
-                .ConfigureServices(collection => { collection.AddSingleton(Container.Resolve<RadioStateService>()); })
+                .ConfigureServices(collection => { collection.AddSingleton(_radioStateService); })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.UseUrls($"http://*:{Defaults.Port}");
+                    webBuilder.UseUrls($"https://*:{Defaults.Port}");
                 });
     }
 }

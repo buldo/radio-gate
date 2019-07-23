@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="../emulator.proto" GrpcServices="Server" />
+    <Protobuf Include="../emulator.proto" GrpcServices="Client" />
   </ItemGroup>
 
 </Project>

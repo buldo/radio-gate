@@ -11,8 +11,8 @@ namespace Gate.Radio.Emulator
 
         public RxState RxState { get; private set; }
 
-        public event EventHandler<EventArgs> StateChanged;
-
+        public Action OnStateChangedAction { get; set; }
+        
         //private Timer _timer = new Timer(1000);
 
         //public RadioStateService()
@@ -46,7 +46,7 @@ namespace Gate.Radio.Emulator
 
         protected virtual void OnStateChanged()
         {
-            StateChanged?.Invoke(this, EventArgs.Empty);
+            OnStateChangedAction?.Invoke();
         }
     }
 }

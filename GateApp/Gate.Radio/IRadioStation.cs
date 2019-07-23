@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Gate.Radio
 {
@@ -8,7 +9,7 @@ namespace Gate.Radio
 
         event EventHandler<RadioStateChangedEventArgs> StateChanged;
 
-        void StartTransceiving();
-        void StopTransceiving();
+        void StartTx();
+        void StopTx();
     }
 }

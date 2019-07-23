@@ -6,7 +6,6 @@
         xmlns:local="clr-namespace:Gate.Radio.Emulator"
         xmlns:mvvm="http://prismlibrary.com/"
         mc:Ignorable="d"
-        mvvm:ViewModelLocator.AutoWireViewModel="True"
         Title="MainWindow" Height="100" Width="200"
         Topmost="True">
     <Grid>

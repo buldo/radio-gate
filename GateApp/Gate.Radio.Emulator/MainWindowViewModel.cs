@@ -10,18 +10,18 @@ namespace Gate.Radio.Emulator
         public MainWindowViewModel(RadioStateService stateService)
         {
             _stateService = stateService;
-            _stateService.StateChanged += StateServiceOnStateChanged;
+            _stateService.OnStateChangedAction = OnStateChangedAction;
+        }
+
+        private void OnStateChangedAction()
+        {
+            TxState = _stateService.TxState;
         }
 
         public TxState TxState
         {
             get => _txState;
             private set => SetProperty(ref _txState, value, nameof(TxState));
-        }
-
-        private void StateServiceOnStateChanged(object sender, EventArgs e)
-        {
-            TxState = _stateService.TxState;
         }
     }
 }

@@ -30,13 +30,13 @@ namespace Gate.Radio
 
         public event EventHandler<RadioStateChangedEventArgs> StateChanged;
 
-        public void StartTransceiving()
+        public void StartTx()
         {
 
             State = RadioState.Tx;
         }
 
-        public void StopTransceiving()
+        public void StopTx()
         {
             State = RadioState.Idle; // Сюда проверку. Может кто-то уже разговаривает
         }
