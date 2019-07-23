@@ -6,16 +6,33 @@
         xmlns:local="clr-namespace:Gate.Radio.Emulator"
         xmlns:mvvm="http://prismlibrary.com/"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:MainWindowViewModel}"
         mvvm:ViewModelLocator.AutoWireViewModel="True"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="100" Width="200"
+        Topmost="True">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition />
+            <RowDefinition />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="{Binding State}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">Tx</TextBlock>
+        <Ellipse Grid.Row="1" Grid.Column="0" Width="20" Height="20">
+            <Ellipse.Style>
+                <Style TargetType="Ellipse">
+                    <Setter Property="Fill" Value="DarkGray"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TxState}" Value="{x:Static local:TxState.Tx}">
+                            <Setter Property="Fill" Value="Green"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Ellipse.Style>
+        </Ellipse>
 
-        </TextBlock>
+        <TextBlock Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">Rx</TextBlock>
+        
     </Grid>
 </Window>
