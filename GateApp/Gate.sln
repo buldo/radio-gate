@@ -36,7 +36,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Emulator", "Emulator", "{5F
 		emulator.proto = emulator.proto
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Radio.Emulator.Service", "Gate.Radio.Emulator.Service\Gate.Radio.Emulator.Service.csproj", "{849D74FE-18FE-4833-8D94-D1AB86E489E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio.Emulator.Service", "Gate.Radio.Emulator.Service\Gate.Radio.Emulator.Service.csproj", "{849D74FE-18FE-4833-8D94-D1AB86E489E0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Radio.Emulator.Client", "Gate.Radio.Emulator.Client\Gate.Radio.Emulator.Client.csproj", "{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Radio.Emulator.Shared", "Gate.Radio.Emulator.Shared\Gate.Radio.Emulator.Shared.csproj", "{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -100,6 +104,14 @@ Global
 		{849D74FE-18FE-4833-8D94-D1AB86E489E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{849D74FE-18FE-4833-8D94-D1AB86E489E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{849D74FE-18FE-4833-8D94-D1AB86E489E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -111,6 +123,8 @@ Global
 		{ECA8CA51-1CDE-49F0-B8D7-8672F690EF2C} = {966A8C5D-254A-40ED-B88E-C9C49A459CAD}
 		{AE35269B-A397-4698-9B32-E2E67A928962} = {5F731509-03A9-4A72-BF73-1454769867DA}
 		{849D74FE-18FE-4833-8D94-D1AB86E489E0} = {5F731509-03A9-4A72-BF73-1454769867DA}
+		{FA2BA3A1-9C93-440D-BDA7-511705F5C92F} = {5F731509-03A9-4A72-BF73-1454769867DA}
+		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36} = {5F731509-03A9-4A72-BF73-1454769867DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18B5C95C-495C-4D8A-B6BA-4649C5E59AC3}

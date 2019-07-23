@@ -9,6 +9,7 @@ using System.Windows;
 using CommonServiceLocator;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
+using Gate.Radio.Emulator.Service;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -53,6 +54,7 @@ namespace Gate.Radio.Emulator
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
+                    webBuilder.UseUrls($"http://*:{Defaults.Port}");
                 });
     }
 }

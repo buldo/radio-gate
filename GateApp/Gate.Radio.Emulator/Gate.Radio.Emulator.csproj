@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Gate.Radio.Emulator.Service\Gate.Radio.Emulator.Service.csproj" />
+    <ProjectReference Include="..\Gate.Radio.Emulator.Shared\Gate.Radio.Emulator.Shared.csproj" />
   </ItemGroup>
 
 </Project>
