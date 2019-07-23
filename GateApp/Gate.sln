@@ -25,8 +25,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{966A8C5D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MumbleSharp.Voice.Tests", "MumbleSharp.Voice.Tests\MumbleSharp.Voice.Tests.csproj", "{764F479C-B94A-4981-BADB-FB87EBCAC1F4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Daemon", "Gate.Daemon\Gate.Daemon.csproj", "{5D2D4349-58CC-4C9F-B020-45A9859E70DF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio", "Gate.Radio\Gate.Radio.csproj", "{BEE572C7-89F9-4099-A44E-3508B66A1238}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio.Emulator", "Gate.Radio.Emulator\Gate.Radio.Emulator.csproj", "{AE35269B-A397-4698-9B32-E2E67A928962}"
@@ -38,9 +36,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Emulator", "Emulator", "{5F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio.Emulator.Service", "Gate.Radio.Emulator.Service\Gate.Radio.Emulator.Service.csproj", "{849D74FE-18FE-4833-8D94-D1AB86E489E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Radio.Emulator.Client", "Gate.Radio.Emulator.Client\Gate.Radio.Emulator.Client.csproj", "{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio.Emulator.Client", "Gate.Radio.Emulator.Client\Gate.Radio.Emulator.Client.csproj", "{FA2BA3A1-9C93-440D-BDA7-511705F5C92F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Radio.Emulator.Shared", "Gate.Radio.Emulator.Shared\Gate.Radio.Emulator.Shared.csproj", "{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gate.Radio.Emulator.Shared", "Gate.Radio.Emulator.Shared\Gate.Radio.Emulator.Shared.csproj", "{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gate.Daemon", "Gate.Daemon\Gate.Daemon.csproj", "{4AE8F79C-9F29-40D4-80AC-74528F51082F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -88,10 +88,6 @@ Global
 		{764F479C-B94A-4981-BADB-FB87EBCAC1F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{764F479C-B94A-4981-BADB-FB87EBCAC1F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{764F479C-B94A-4981-BADB-FB87EBCAC1F4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D2D4349-58CC-4C9F-B020-45A9859E70DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D2D4349-58CC-4C9F-B020-45A9859E70DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D2D4349-58CC-4C9F-B020-45A9859E70DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D2D4349-58CC-4C9F-B020-45A9859E70DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BEE572C7-89F9-4099-A44E-3508B66A1238}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BEE572C7-89F9-4099-A44E-3508B66A1238}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BEE572C7-89F9-4099-A44E-3508B66A1238}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -112,6 +108,10 @@ Global
 		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E9DAC0E0-532D-483D-AA31-6FFDC3DD6D36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AE8F79C-9F29-40D4-80AC-74528F51082F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AE8F79C-9F29-40D4-80AC-74528F51082F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AE8F79C-9F29-40D4-80AC-74528F51082F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AE8F79C-9F29-40D4-80AC-74528F51082F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "Gate.Daemon": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
