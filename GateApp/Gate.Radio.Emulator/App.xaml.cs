@@ -9,7 +9,7 @@ using System.Windows;
 using CommonServiceLocator;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
-using Gate.Radio.Emulator.Service;
+using Gate.Radio.Emulator.Shared;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

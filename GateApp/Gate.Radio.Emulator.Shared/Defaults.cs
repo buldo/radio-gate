@@ -1,4 +1,4 @@
-﻿namespace Gate.Radio.Emulator.Service
+﻿namespace Gate.Radio.Emulator.Shared
 {
     public static class Defaults
     {
